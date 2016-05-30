@@ -1,0 +1,206 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/app-storage/app-indexeddb-mirror/common-worker.html">
+<link rel="import" href="meat-scope-user-media.html">
+<link rel="import" href="meat-scope-video.html">
+<link rel="import" href="meat-scope-webm-client.html">
+<link rel="import" href="meat-scope-devices.html">
+<link rel="import" href="meat-scope-spinner.html">
+<link rel="import" href="meat-scope-controls.html">
+<link rel="import" href="meat-scope-film-strip.html">
+<link rel="import" href="meat-scope-gallery-preview.html">
+
+<dom-module id="meat-scope-camera">
+  <template>
+    <style>
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-size: 100%;
+      }
+
+      meat-scope-spinner {
+        position: absolute;
+        top: calc(50% - 74px);
+        left: calc(50% - 74px);
+      }
+
+      meat-scope-controls {
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        right: 0;
+      }
+
+      meat-scope-gallery-preview {
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        left: 0;
+      }
+
+      meat-scope-video.user {
+        backface-visibility: visible;
+        transform: scale(-1, 1);
+      }
+
+      #placeholder {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <meat-scope-devices
+        has-multiple-cameras="{{hasMultipleCameras}}"
+        camera-one="{{cameraOne}}"
+        camera-two="{{cameraTwo}}">
+    </meat-scope-devices>
+    <meat-scope-user-media
+        device="[[selectedCamera]]"
+        stream="{{stream}}"
+        active="[[!disabled]]">
+    </meat-scope-user-media>
+    <meat-scope-video
+        id="video"
+        class$="[[selectedCamera]]"
+        stream="[[stream]]"
+        clamp="[[clamp]]">
+    </meat-scope-video>
+    <meat-scope-spinner
+        id="spinner"
+        lead-time="[[leadTime]]"
+        run-time="[[recordTime]]"
+        active="[[recording]]">
+    </meat-scope-spinner>
+    <meat-scope-controls
+        id="controls"
+        has-multiple-cameras="[[hasMultipleCameras]]"
+        selected-camera="[[selectedCamera]]"
+        on-switch-cameras="__onSwitchCameras"
+        on-record="record"
+        hide="[[recording]]">
+    </meat-scope-controls>
+    <meat-scope-gallery-preview
+        video-url="[[previewUrl]]"
+        hide="[[__hidePreview(recording, previewUrl)]]"
+        disabled="[[disabled]]">
+    </meat-scope-gallery-preview>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-camera',
+
+      properties: {
+        selectedCamera: {
+          type: String,
+          notify: true,
+          value: 'user'
+        },
+
+        disabled: {
+          type: Boolean,
+          notify: true,
+          value: false
+        },
+
+        client: {
+          type: Object,
+          value: function() {
+            return new MeatScopeWebMClient(
+                this.resolveUrl('meat-scope-webm-worker.js'));
+          }
+        },
+
+        leadTime: {
+          type: Number,
+          value: 2000
+        },
+
+        recordTime: {
+          type: Number,
+          value: 3000
+        },
+
+        fps: {
+          type: Number,
+          value: 24
+        },
+
+        clamp: {
+          type: Number,
+          value: 180
+        },
+
+        recording: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        },
+
+        previewUrl: {
+          type: String,
+          value: null
+        }
+      },
+
+      record: function() {
+        var filmStrip = new MeatScopeFilmStrip(
+            this.$.video, this.clamp,
+            this.selectedCamera === 'user' ? 'mirror' : 'none');
+
+        return new Promise(function(resolve, reject) {
+          var frames = [];
+          var start = this.__now();
+          var intervalLength = 1000 / this.fps;
+          var totalTime = this.leadTime + this.recordTime;
+          var elapsedTime = 0;
+          var self = this;
+
+          this._setRecording(true);
+
+          (function frame() {
+            var currentTime = self.__now() - start;
+            if (currentTime >= self.leadTime && currentTime < totalTime) {
+              var frameTime = (currentTime - self.leadTime) - elapsedTime;
+              if (frameTime > intervalLength) {
+                filmStrip.capture();
+                elapsedTime += frameTime;
+              }
+            } else if (currentTime >= totalTime) {
+              window.requestAnimationFrame(function() {
+                resolve(self.client.framesToWebM(
+                    filmStrip.develop(), self.fps));
+              });
+              return;
+            }
+
+            window.setTimeout(frame, 0);
+          })();
+        }.bind(this)).then(function(video) {
+          this._setRecording(false);
+          this.fire('video-recorded', {
+            video: video
+          });
+          this.previewUrl = video.url;
+          return video;
+        }.bind(this)).then(function() {
+          filmStrip.analyze();
+        });
+      },
+
+      __now: function() {
+        return (window.performance || Date).now();
+      },
+
+      __onSwitchCameras: function() {
+        if (this.hasMultipleCameras) {
+          this.selectedCamera = this.selectedCamera === 'user' ?
+              'environment' : 'user';
+        }
+      },
+
+      __hidePreview: function(recording, videoUrl) {
+        return !videoUrl || recording;
+      }
+    });
+  </script>

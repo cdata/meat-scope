@@ -1,0 +1,162 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<dom-module id="meat-scope-video">
+  <template>
+    <style>
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        opacity: 0.05;
+      }
+
+      video {
+        transform-origin: 0 0;
+      }
+    </style>
+    <video
+        id="video"
+        autoplay>
+    </video>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'meat-scope-video',
+
+        behaviors: [
+          Polymer.IronResizableBehavior
+        ],
+
+        properties: {
+          stream: {
+            type: Object,
+            notify: true
+          },
+
+          objectUrl: {
+            type: Object,
+            computed: '__computeObjectUrl(stream)',
+            observer: '__objectUrlChanged'
+          },
+
+          canvas: {
+            type: HTMLCanvasElement,
+            value: document.createElement('canvas')
+          },
+
+          clamp: {
+            type: Number
+          },
+
+          transform: {
+            type: String
+          }
+        },
+
+        listeners: {
+          'iron-resize': '__updateVideoMetrics',
+          'video.loadedmetadata': '__updateVideoMetrics'
+        },
+
+        created: function() {
+          this.__selfRect = {};
+          this.__videoScale = 1;
+          this.__videoTop = 0;
+          this.__videoLeft = 0;
+          this.__context = null;
+        },
+
+        ready: function() {
+          this.__context = this.canvas.getContext('2d');
+        },
+
+        attached: function() {
+          this.__updateVideoMetrics();
+        },
+
+        get viewportWidth() {
+          return this.__selfRect.width;
+        },
+
+        get viewportHeight() {
+          return this.__selfRect.height;
+        },
+
+        get x() {
+          return this.__videoLeft;
+        },
+
+        get y() {
+          return this.__videoTop;
+        },
+
+        get scale() {
+          return this.__videoScale;
+        },
+
+        __computeObjectUrl: function(stream) {
+          return stream ? window.URL.createObjectURL(stream) : null;
+        },
+
+        __objectUrlChanged: function(objectUrl, oldObjectUrl) {
+          if (objectUrl) {
+            this.$.video.src = objectUrl;
+            try {
+              this.$.video.play();
+            } catch (e) {}
+          } else {
+            this.$.video.pause();
+          }
+
+          if (oldObjectUrl) {
+            window.URL.revokeObjectURL(oldObjectUrl);
+          }
+        },
+
+        __onIronResize: function() {
+          this.__updateVideoMetrics();
+        },
+
+        __updateVideoMetrics: function() {
+          var videoWidth = this.$.video.videoWidth;
+          var videoHeight = this.$.video.videoHeight;
+
+          if (!videoWidth || !videoHeight) {
+            this.$.video.style.visibility = 'hidden';
+            return;
+          } else {
+            this.$.video.style.visibility = 'visible';
+          }
+
+          var selfRect = this.getBoundingClientRect();
+
+          var selfRatio = selfRect.width / selfRect.height;
+          var videoRatio = videoWidth / videoHeight;
+          var videoScale;
+
+          if (videoRatio > selfRatio) {
+            videoScale = selfRect.height / videoHeight;
+          } else {
+            videoScale = selfRect.width / videoWidth;
+          }
+
+          var videoTop = selfRect.height / 2 - (videoHeight / 2 * videoScale);
+          var videoLeft = selfRect.width / 2 - (videoWidth / 2 * videoScale);
+
+          this.__videoTop = videoTop;
+          this.__videoLeft = videoLeft;
+          this.__videoScale = videoScale;
+
+          this.__selfRect = selfRect;
+          this.$.video.style.transform =
+              'translate(' + videoLeft + 'px, ' + videoTop + 'px) ' +
+              'scale(' + videoScale + ')';
+        }
+      });
+    })();
+  </script>
+</dom-module>

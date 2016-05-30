@@ -1,0 +1,37 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-behaviors/iron-control-state.html">
+<link rel="import" href="/bower_components/iron-behaviors/iron-button-state.html">
+<dom-module id="meat-scope-record-button">
+  <template>
+    <style>
+      :host {
+        display: block;
+        cursor: pointer;
+        width: 128px;
+        height: 128px;
+        background-image: url('/src/images/meat_scope_empty_button_sprite.svg');
+        background-size: 256px 128px;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      :host([pressed]) {
+        background-position: -128px;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-record-button',
+
+      behaviors: [
+        Polymer.IronControlState,
+        Polymer.IronButtonState
+      ],
+
+      hostAttributes: {
+        tabindex: '0',
+        'aria-label': 'Record'
+      }
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,93 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<dom-module id="meat-scope-user-media">
+  <script>
+    (function() {
+      var getUserMedia = (function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          return navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        }
+
+        return function(constraints) {
+          console.log(constraints);
+          return new Promise(function(resolve, reject) {
+            (navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia ||
+            function () {
+              throw(new Error(
+                  'This browser does not support navigator.getUserMedia.'));
+            }).call(navigator, constraints, resolve, reject);
+          });
+        };
+      })();
+
+      Polymer({
+        is: 'meat-scope-user-media',
+
+        properties: {
+          stream: {
+            type: Object,
+            notify: true,
+            readOnly: true,
+            observer: '__streamChanged'
+          },
+
+          device: {
+            type: String,
+            notify: true
+          },
+
+          active: {
+            type: Boolean,
+            notify: true,
+            value: false,
+            reflectToAttribute: true
+          }
+        },
+
+        observers: [
+          '__updateStream(active, device)'
+        ],
+
+        created: function() {
+          this.__requestingUserMedia = null;
+        },
+
+        getUserMedia: function() {
+          console.log(getUserMedia, this.device);
+          return getUserMedia({
+            audio: false,
+            video: {
+              facingMode: this.device
+            }
+          });
+        },
+
+        __updateStream: function() {
+          if (this.active && !this.__requestingUserMedia) {
+            this.__requestingUserMedia = this.getUserMedia()
+                .then(function(stream) {
+                  this.__requestingUserMedia = null;
+                  if (this.active) {
+                    this._setStream(stream);
+                  }
+                }.bind(this)).catch(function(error) {
+                  console.error(error);
+                });
+          } else {
+            this._setStream(null);
+          }
+        },
+
+        __streamChanged: function(stream, oldStream) {
+          if (oldStream) {
+            oldStream.getTracks().forEach(function(track) {
+              track.stop();
+            });
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>

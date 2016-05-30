@@ -1,0 +1,118 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-styles/color.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<dom-module id="meat-scope-gallery-preview">
+  <template>
+    <style>
+      :host {
+        box-sizing: border-box;
+        width: 128px;
+        height: 128px;
+        margin: 16px;
+        border: 8px solid var(--paper-light-blue-500);
+        border-radius: 50%;
+        border-top-width: 1px;
+        border-left-width: 4px;
+        border-right-width: 4px;
+        background-color: var(--paper-light-blue-50);
+        overflow: hidden;
+
+        transition: transform 0.15s, opacity 0.15s;
+        transform: translate(0);
+        opacity: 1;
+        will-change: opacity, transform;
+      }
+
+      :host([hide]) {
+        transform: translate(-10px, 0);
+        opacity: 0;
+      }
+
+      #link {
+        line-height: 0;
+        width: 100%;
+        height: 100%;
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+      }
+    </style>
+    <a
+        id="link"
+        href="/gallery">
+        <!-- href="javascript:void(0)"> -->
+      <video
+          on-tap="preview"
+          id="video"
+          autoplay
+          loop>
+      </video>
+    </a>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-gallery-preview',
+
+      properties: {
+        videoUrl: {
+          type: String,
+          observer: '__videoUrlChanged'
+        },
+
+        hide: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: true
+        },
+
+        disabled: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      observers: [
+        '__hideOrDisabledChanged(hide, disabled)'
+      ],
+
+      listeners: {
+        'video.loadedmetadata': '__updateVideoScale'
+      },
+
+      preview: function() {
+        this.$.video.play();
+      },
+
+      __hideOrDisabledChanged: function() {
+        this.debounce('pause-or-play', function() {
+          if (this.hide || this.disabled) {
+            if (!this.$.video.paused) {
+              this.$.video.pause();
+            }
+          } else {
+            if (this.$.video.paused) {
+              this.$.video.play();
+            }
+          }
+        });
+      },
+
+      __videoUrlChanged: function(videoUrl) {
+        if (videoUrl != null) {
+          this.$.video.src = videoUrl;
+        }
+      },
+
+      __updateVideoScale: function() {
+        var ratio = this.$.video.videoWidth / this.$.video.videoHeight;
+
+        if (ratio > 1) {
+          this.$.video.style.minWidth = '';
+          this.$.video.style.minHeight = '100%';
+        } else {
+          this.$.video.style.minWidth = '100%';
+          this.$.video.style.minHeight = '';
+        }
+      }
+    });
+  </script>
+</dom-module>

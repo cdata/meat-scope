@@ -1,0 +1,59 @@
+<script>
+(function() {
+  'use strict';
+
+  function MeatScopeWebMClient(workerUrl) {
+    this.__workerUrl = workerUrl;
+    this.__nextMessageId = 0;
+    this.connect();
+  }
+
+  MeatScopeWebMClient.prototype = {
+    connect: function() {
+      this.__connectsToWorker = this.__connectsToWorker ||
+          new Promise(function(resolve, reject) {
+            var worker = new Polymer.CommonWorker(this.__workerUrl);
+            worker.port.addEventListener('message', function onMessage(event) {
+              if (event.data && event.data.type === 'meat-scope-connected') {
+                worker.port.removeEventListener('message', onMessage);
+                resolve(worker);
+              }
+            });
+            worker.port.start();
+          }.bind(this));
+
+      return this.__connectsToWorker;
+    },
+
+    post: function(message) {
+      return this.connect().then(function(worker) {
+        return new Promise(function(resolve) {
+          message.id = this.__nextMessageId++;
+          worker.port.addEventListener('message', function(event) {
+            if (event.data && event.data.id === message.id) {
+              if (event.data.type === 'error') {
+                reject(event.data);
+              } else {
+                resolve(event.data);
+              }
+            }
+          });
+          worker.port.postMessage(message);
+        }.bind(this));
+      }.bind(this));
+    },
+
+    framesToWebM: function(frames, fps) {
+      return this.post({
+        type: 'meat-scope-frames-to-webm',
+        frames: frames,
+        fps: fps
+      }).then(function(data) {
+        return data.webm;
+      });
+    }
+  };
+
+  window.MeatScopeWebMClient = MeatScopeWebMClient;
+})();
+</script>

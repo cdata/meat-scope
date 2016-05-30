@@ -1,0 +1,95 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="/bower_components/iron-icons/av-icons.html">
+<link rel="import" href="/bower_components/iron-icons/image-icons.html">
+<link rel="import" href="/bower_components/iron-icons/notification-icons.html">
+<link rel="import" href="/bower_components/iron-icons/av-icons.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="meat-scope-devices.html">
+<link rel="import" href="meat-scope-record-button.html">
+<dom-module id="meat-scope-controls">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-vertical);
+        @apply(--layout-end);
+        transition: transform 0.15s, opacity 0.15s;
+        transform: translate(0);
+        opacity: 1;
+        will-change: opacity, transform;
+      }
+
+      :host([hide]) {
+        transform: translate(10px, 0);
+        opacity: 0;
+      }
+
+      paper-fab,
+      meat-scope-record-button {
+        margin: 16px;
+      }
+    </style>
+
+    <!-- <paper-fab
+        mini
+        icon="image:photo-filter"
+        disabled>
+    </paper-fab> -->
+    <paper-fab
+        mini
+        icon="image:crop-free"
+        disabled>
+    </paper-fab>
+    <paper-fab
+        mini
+        icon="av:av-timer"
+        disabled>
+    </paper-fab>
+    <paper-fab
+        mini
+        icon="[[__computeCameraIcon(selectedCamera)]]"
+        on-tap="__onSwitchCamerasTap"
+        hidden$="[[!hasMultipleCameras]]">
+    </paper-fab>
+
+    <meat-scope-record-button
+        on-tap="__onRecordTap">
+    </meat-scope-record-button>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-controls',
+
+      properties: {
+        hide: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        },
+
+        selectedCamera: {
+          type: String
+        },
+
+        hasMultipleCameras: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      __computeCameraIcon: function(selectedCamera) {
+        return selectedCamera === 'environment' ?
+            'image:camera-front' :
+            'image:camera-rear';
+      },
+
+      __onSwitchCamerasTap: function() {
+        this.fire('switch-cameras');
+      },
+
+      __onRecordTap: function() {
+        this.fire('record');
+      }
+    });
+  </script>
+</dom-module>

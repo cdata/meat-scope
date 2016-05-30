@@ -1,0 +1,73 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-behaviors/iron-control-state.html">
+<link rel="import" href="/bower_components/iron-behaviors/iron-button-state.html">
+<dom-module id="meat-scope-menu-button">
+  <template>
+    <style>
+      :host {
+        display: flex;
+        cursor: pointer;
+        width: 48px;
+        height: 48px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      span:before,
+      span:after {
+        content: '';
+      }
+
+      span,
+      span:before,
+      span:after {
+        display: block;
+        width: 18px;
+        height: 2px;
+        background-color: #fff;
+        transition: transform 0.3s;
+      }
+
+      span:before {
+        transform: translate(0, -5px);
+      }
+
+      span:after {
+        transform: translate(0, 3px);
+      }
+
+      :host([active]) span {
+        transform: rotate(180deg) scale(0.8, 1);
+      }
+
+      :host([active]) span:before {
+        transform: translate(4px, -3px) rotate(35deg) scale(0.6, 1);
+
+      }
+
+      :host([active]) span:after {
+        transform: translate(4px, 1px) rotate(-35deg) scale(0.6, 1);
+      }
+    </style>
+    <span></span>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-menu-button',
+
+      behaviors: [
+        Polymer.IronControlState,
+        Polymer.IronButtonState
+      ],
+
+      properties: {
+        toggles: {
+          type: Boolean,
+          value: true,
+          reflectToAttribute: true
+        }
+      }
+    });
+  </script>
+</dom-module>

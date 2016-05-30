@@ -1,0 +1,78 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<dom-module id="meat-scope-devices">
+  <script>
+    (function() {
+      'use strict';
+
+      var enumerateDevices = (function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          return navigator.mediaDevices.enumerateDevices
+              .bind(navigator.mediaDevices);
+        } else if (window.MediaStreamTrack && MediaStreamTrack.getSources) {
+          return function() {
+            return new Promise(function(resolve, reject) {
+              try {
+                MediaStreamTrack.getSources(function(sources) {
+                  resolve(sources.map(function(source) {
+                    source.deviceId = source.deviceId || source.id;
+                    return source;
+                  }));
+                });
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }
+        }
+
+        return function() {
+          return Promise.reject('Browser does not support device enumeration!');
+        };
+      })();
+
+      var cameras = [];
+
+      var devicesEnumerate = enumerateDevices().then(function(devices) {
+        var videoMatch = /video/i;
+
+        for (var i = 0; i < devices.length; ++i) {
+          if (videoMatch.test(devices[i].kind)) {
+            cameras.push(devices[i]);
+          }
+        }
+      });
+
+      Polymer({
+        is: 'meat-scope-devices',
+
+        properties: {
+          hasMultipleCameras: {
+            type: Boolean,
+            readOnly: true,
+            notify: true
+          },
+
+          cameraOne: {
+            type: Object,
+            readOnly: true,
+            notify: true
+          },
+
+          cameraTwo: {
+            type: Object,
+            readOnly: true,
+            notify: true
+          }
+        },
+
+        ready: function() {
+          devicesEnumerate.then(function() {
+            this._setHasMultipleCameras(cameras.length > 1);
+            this._setCameraOne(cameras[0]);
+            this._setCameraTwo(cameras[1]);
+          }.bind(this));
+        }
+      });
+    })();
+  </script>
+</dom-module>

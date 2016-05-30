@@ -1,0 +1,87 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/app-route/app-location.html">
+<link rel="import" href="/bower_components/app-route/app-route.html">
+<link rel="import" href="meat-scope-camera.html">
+<link rel="import" href="meat-scope-gallery.html">
+<dom-module id="meat-scope-app">
+  <template>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background: #ccc;
+
+        --paper-fab: {
+          color: var(--paper-light-blue-50);
+        };
+
+        --paper-fab-background: var(--paper-light-blue-500);
+        --paper-fab-keyboard-focus-background: var(--paper-light-blue-300);
+      }
+
+      meat-scope-gallery {
+        z-index: 1;
+      }
+    </style>
+    <app-location
+        route="{{route}}">
+    </app-location>
+
+    <app-route
+        route="{{route}}"
+        pattern="/gallery"
+        active="{{viewingGallery}}">
+    </app-route>
+
+    <meat-scope-camera
+        id="camera"
+        use-secondary-camera="{{useSecondaryCamera}}"
+        disabled="[[viewingGallery]]"
+        on-video-recorded="__onVideoRecorded">
+    </meat-scope-camera>
+
+    <meat-scope-gallery
+        id="gallery"
+        videos="{{videos}}"
+        hide="[[!viewingGallery]]">
+    </meat-scope-gallery>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'meat-scope-app',
+
+      properties: {
+        videos: {
+          type: Array,
+          notify: true,
+          value: function() {
+            return [];
+          }
+        },
+
+        useSecondaryCamera: {
+          type: Boolean,
+          readOnly: true,
+          value: false
+        },
+
+        previewVideoUrl: {
+          type: String,
+          value: null
+        }
+      },
+
+      observers: [
+        // '__videosChanged(videos.length)'
+      ],
+
+      __onVideoRecorded: function(event) {
+        this.unshift('videos', event.detail.video);
+      }
+    });
+  </script>
+</dom-module>
