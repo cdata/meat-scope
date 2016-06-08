@@ -17,7 +17,6 @@
 
         for (var i = 0; i < 3; ++i) {
           this.contexts.push(document.createElement('canvas').getContext('2d'));
-          // document.body.appendChild(this.contexts[i].canvas);
         }
       }
 
@@ -40,27 +39,36 @@
         },
 
         flush: function() {
-          var images = [];
+          var lastContextIndex = 0|(this.currentIndex / this.cells) + 1;
+          var pixelBuffer = {
+            type: 'pixelBuffer',
+            width: this.width,
+            height: this.height,
+            gridWidth: this.gridWidth,
+            gridHeight: this.gridHeight,
+            pages: []
+          };
 
           this.setScale(1, 1);
 
-          for (var i = 0; i < this.currentIndex; ++i) {
-            var j = i % this.cells;
-            var y = 0|(j / this.gridWidth);
-            var x = j % this.gridHeight;
-            var canvas = this.contexts[0|(i / this.cells) + 1].canvas;
+          for (var i = 1; i < this.contexts.length; ++i) {
+            if (i > lastContextIndex) {
+              break;
+            }
 
-            this.outputContext.drawImage(
-                canvas,
-                x * this.width, y * this.height, this.width, this.height,
-                0, 0, this.width, this.height);
-
-            images.push(this.outputContext.canvas.toDataURL('image/webp'));
+            pixelBuffer.pages.push({
+              cells: i < lastContextIndex ?
+                  this.cells :
+                  this.currentIndex % this.cells,
+              imageData: this.contexts[i].getImageData(
+                  0, 0,
+                  this.gridWidth * this.width, this.gridHeight * this.height)
+            });
           }
 
           this.currentIndex = 0;
 
-          return images;
+          return pixelBuffer;
         },
 
         setSize: function(width, height) {
@@ -87,10 +95,10 @@
         },
 
         drawImage: function(image, sx, sy, sw, sh) {
-          var nextIndex = this.currentIndex++;
+          var nextIndex = this.currentIndex;
           var i = nextIndex % this.cells;
           var y = 0|(i / this.gridWidth);
-          var x = i % this.gridHeight;
+          var x = i % this.gridWidth;
           var tw = this.width * this.xScale;
           var th = this.height * this.yScale;
 
@@ -98,10 +106,12 @@
               image,
               sx, sy, sw, sh,
               x * tw, y * th, tw, th);
+
+          this.currentIndex++;
         }
       };
 
-      var pixelBuffer = new PixelBuffer(8, 8);
+      var pixelBuffer = new PixelBuffer(1, 48);
 
       function MeatScopeFilmStrip(video, clamp, transform, x, y, width, height) {
         this.pixelBuffer = pixelBuffer;
@@ -123,6 +133,9 @@
           this.clampedHeight = Math.min(this.height - this.y, this.clamp);
           this.clampedWidth = this.clampedHeight * this.ratio;
         }
+
+        this.clampedWidth = 0|this.clampedWidth;
+        this.clampedHeight = 0|this.clampedHeight;
 
         this.pixelBuffer.setSize(this.clampedWidth, this.clampedHeight);
         if (this.transform === 'mirror') {

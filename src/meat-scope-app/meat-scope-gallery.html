@@ -21,6 +21,7 @@
         opacity: 0;
         pointer-events: none;
       }
+      video
     </style>
     <template is="dom-repeat" items="[[videos]]" as="video">
       <video src="[[video.url]]"></video>
@@ -51,7 +52,11 @@
       ],
 
       updateLayout: function() {
-
+        /*var videoElements = this.$$('video');
+        for (var i = 0; i < videoElements.length; ++i) {
+          var video = videoElements[i];
+        }
+        this.videos*/
       }
     });
   </script>

@@ -2,7 +2,7 @@
 <link rel="import" href="/bower_components/app-storage/app-indexeddb-mirror/common-worker.html">
 <link rel="import" href="meat-scope-user-media.html">
 <link rel="import" href="meat-scope-video.html">
-<link rel="import" href="meat-scope-webm-client.html">
+<link rel="import" href="meat-scope-media-client.html">
 <link rel="import" href="meat-scope-devices.html">
 <link rel="import" href="meat-scope-spinner.html">
 <link rel="import" href="meat-scope-controls.html">
@@ -105,8 +105,8 @@
         client: {
           type: Object,
           value: function() {
-            return new MeatScopeWebMClient(
-                this.resolveUrl('meat-scope-webm-worker.js'));
+            return new MeatScopeMediaClient(
+                this.resolveUrl('meat-scope-media-worker.js'));
           }
         },
 
@@ -168,15 +168,19 @@
               }
             } else if (currentTime >= totalTime) {
               window.requestAnimationFrame(function() {
-                resolve(self.client.framesToWebM(
-                    filmStrip.develop(), self.fps));
+                resolve(self.client.convertTo(filmStrip.develop(), 'webm'));
               });
               return;
             }
 
             window.setTimeout(frame, 0);
           })();
-        }.bind(this)).then(function(video) {
+        }.bind(this)).then(function(blob) {
+          var video = {
+            blob: blob,
+            url: URL.createObjectURL(blob, { type: 'video/webm' })
+          };
+
           this._setRecording(false);
           this.fire('video-recorded', {
             video: video
