@@ -17,7 +17,8 @@
     "gif.js": "cdata/gif.js#^0.1.7",
     "app-pouchdb": "polymerelements/app-pouchdb#support-attachments",
     "web-animations-js": "web-animations/web-animations-js#^2.2.0",
-    "clipboard": "zenorocha/clipboard.js#^1.5.12"
+    "clipboard": "zenorocha/clipboard.js#^1.5.12",
+    "platinum-sw": "polymerelements/platinum-sw#^1.0.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",

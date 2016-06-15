@@ -22,10 +22,15 @@
     <meta name="msapplication-TileColor" content="#00A7F7">
     <meta name="msapplication-TileImage" content="src/images/icon-3x.png">
 
-    <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-    <script src="/bower_components/web-animations-js/web-animations.min.js"></script>
-    <script src="/bower_components/webrtc-polyfill/index.js"></script>
-    <link rel="import" href="/src/meat-scope-app/meat-scope-app.html">
+    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="bower_components/web-animations-js/web-animations.min.js"></script>
+    <script src="bower_components/webrtc-polyfill/index.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js');
+      }
+    </script>
+    <link rel="import" href="src/meat-scope-app/meat-scope-app.html">
     <style>
       body {
         margin: 0;

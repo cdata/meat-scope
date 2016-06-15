@@ -1,0 +1,8 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/meat-scope-app/meat-scope-app.html",
+  "fragments": [
+    "src/meat-scope-app/meat-scope-camera.html",
+    "src/meat-scope-app/meat-scope-videos.html"
+  ]
+}
