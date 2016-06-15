@@ -1,4 +1,5 @@
 {
+  "root": "./client",
   "entrypoint": "index.html",
   "shell": "src/meat-scope-app/meat-scope-app.html",
   "fragments": [

@@ -1,0 +1,22 @@
+{
+  "name": "meat-scope",
+  "version": "0.0.1",
+  "description": "Capture your meatiest moments and share them with other meats!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cdata/meat-scope.git"
+  },
+  "author": "",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/cdata/meat-scope/issues"
+  },
+  "homepage": "https://github.com/cdata/meat-scope#readme",
+  "dependencies": {
+    "express": "^4.13.4"
+  }
+}
