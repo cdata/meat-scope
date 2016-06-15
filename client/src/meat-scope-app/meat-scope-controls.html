@@ -58,11 +58,53 @@
       #settings {
         @apply(--layout-end-justified);
       }
+
+      #update-indicator {
+        display: block;
+        position: absolute;
+        pointer-events: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #F15092;
+        z-index: 2;
+        margin: 24px 0 0 42px;
+        transform-origin: center center;
+        animation: throb 1s cubic-bezier(.17,.67,.83,.67);
+        animation-iteration-count: infinite;
+      }
+
+      @keyframes throb {
+        0% {
+          transform: scale(1);
+        }
+
+        40% {
+          transform: scale(1);
+        }
+
+        55% {
+          transform: scale(1.15);
+        }
+
+        70% {
+          transform: scale(1.05);
+        }
+
+        85% {
+          transform: scale(1.15);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
     </style>
 
 
     <section id="main" hide$=[[showSettings]]>
-      <a href="/videos">
+      <a href="/videos" on-down="__onVideoLinkTap">
+        <div id="update-indicator" hidden$="[[!showUpdateIndicator]]"></div>
         <paper-icon-button icon="av:subscriptions">
         </paper-icon-button>
       </a>
@@ -107,6 +149,11 @@
           value: false
         },
 
+        showUpdateIndicator: {
+          type: Boolean,
+          value: false
+        },
+
         hide: {
           type: Boolean,
           reflectToAttribute: true,
@@ -136,6 +183,10 @@
 
       __onRecordTap: function() {
         this.fire('record');
+      },
+
+      __onVideoLinkTap: function() {
+        this.showUpdateIndicator = false;
       }
     });
   </script>

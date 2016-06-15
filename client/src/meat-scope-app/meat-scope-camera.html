@@ -145,6 +145,22 @@
         }
       },
 
+      created: function() {
+        this.__ownerHost = null;
+      },
+
+      attached: function() {
+        var ownerRoot = Polymer.dom(this).getOwnerRoot();
+        var ownerHost = ownerRoot ? ownerRoot.host : document;
+        this.__ownerHost = ownerHost;
+        this.listen(this.__ownerHost, 'videos-updated', '__onVideosUpdated');
+      },
+
+      detached: function() {
+        this.unlisten(this.__ownerHost, 'videos-updated', '__onVideosUpdated');
+        this.__ownerHost = null;
+      },
+
       record: function() {
         var filmStrip = new MeatScopeFilmStrip(
             this.$.video, this.clamp,
@@ -205,6 +221,10 @@
 
       __onSwitchCameras: function() {
         this.$.devices.switchToNextCamera();
+      },
+
+      __onVideosUpdated: function() {
+        this.$.controls.showUpdateIndicator = true;
       },
 
       __hidePreview: function(recording, videoUrl) {

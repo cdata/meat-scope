@@ -46,7 +46,8 @@
         id="gallery"
         videos="{{videos}}"
         route="{{route}}"
-        hide="[[!videosRouteActive]]">
+        hide="[[!videosRouteActive]]"
+        videos-in-progress="{{videosInProgress}}">
     </meat-scope-videos>
   </template>
 
@@ -56,10 +57,25 @@
       is: 'meat-scope-app',
 
       properties: {
-        previewVideoUrl: {
-          type: String,
-          value: null
+        videosInProgress: {
+          type: Array
         }
+      },
+
+      observers: [
+        '__videosInProgressChanged(videosInProgress.length)'
+      ],
+
+      created: function() {
+        this.__lastVideosInProgressLength = null;
+      },
+
+      __videosInProgressChanged: function(length) {
+        if (this.__lastVideosInProgressLength != null) {
+          this.fire('videos-updated');
+        }
+
+        this.__lastVideosInProgressLength = length;
       }
     });
   </script>

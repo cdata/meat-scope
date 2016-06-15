@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "MEAT_SCOPE_STATIC_FOLDER=./build/unbundled/client node ./index.js"
+    "start": "MEAT_SCOPE_STATIC_FOLDER=./client/build/unbundled node ./index.js"
   },
   "repository": {
     "type": "git",
