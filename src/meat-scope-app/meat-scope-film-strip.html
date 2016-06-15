@@ -17,6 +17,7 @@
 
         for (var i = 0; i < 3; ++i) {
           this.contexts.push(document.createElement('canvas').getContext('2d'));
+          // document.body.appendChild(this.contexts[i].canvas);
         }
       }
 
@@ -111,7 +112,7 @@
         }
       };
 
-      var pixelBuffer = new PixelBuffer(1, 48);
+      var pixelBuffer = new PixelBuffer(6, 6);
 
       function MeatScopeFilmStrip(video, clamp, transform, x, y, width, height) {
         this.pixelBuffer = pixelBuffer;
@@ -161,17 +162,21 @@
         },
 
         analyze: function() {
-          var sum = 0;
+          var captureSum = 0;
+          var developSum = 0;
           var captures = performance.getEntriesByName('capture');
-          var develop = performance.getEntriesByName('develop')[0];
+          var develops = performance.getEntriesByName('develop');
 
           for (var i = 0; i < captures.length; ++i) {
-            sum += captures[i].duration;
+            captureSum += captures[i].duration;
           }
 
-          console.log('Number of frames captures:', captures.length);
-          console.log('Average capture time:', sum / i, 'ms');
-          console.log('Time to develop:', develop.duration, 'ms');
+          for (var j = 0; j < develops.length; ++j) {
+            developSum += develops[j].duration;
+          }
+
+          console.log('Average capture time:', captureSum / i, 'ms (out of ' + i + ' measures)');
+          console.log('Average develop time:', developSum / j, 'ms (out of ' + j + ' measures)');
         }
       };
 

@@ -29,8 +29,9 @@
       return this.connect().then(function(worker) {
         return new Promise(function(resolve) {
           message.id = this.__nextMessageId++;
-          worker.port.addEventListener('message', function(event) {
+          worker.port.addEventListener('message', function onMessage(event) {
             if (event.data && event.data.id === message.id) {
+              worker.port.removeEventListener('message', onMessage);
               if (event.data.type === 'error') {
                 reject(event.data);
               } else {
@@ -50,6 +51,59 @@
         outputType: outputType
       }).then(function(data) {
         return data.blob;
+      });
+    },
+
+    makeConversionObserver: function() {
+      return this.connect().then(function(worker) {
+        var observer;
+
+        function onMessage(event) {
+          var data = event.data;
+          switch (data && data.type) {
+            case 'meat-scope-conversion-enqueued':
+              observer('enqueued', {
+                id: data.converterId
+              });
+              break;
+            case 'meat-scope-conversion-progress':
+              observer('progress', {
+                id: data.converterId,
+                progress: data.progress,
+                total: data.total
+              });
+              break;
+            case 'meat-scope-conversion-complete':
+              observer('complete', {
+                id: data.converterId,
+                video: data.video
+              });
+              break;
+            case 'error':
+              observer('error', {
+                id: data.converterId,
+                error: data.error
+              });
+            break;
+          }
+        }
+
+        return {
+          disconnect: function() {
+            worker.port.removeEventListener('message', onMessage);
+            worker.port.postMessage({
+              type: 'meat-scope-ignore-conversions'
+            });
+          },
+
+          connect: function(_observer) {
+            observer = _observer;
+            worker.port.addEventListener('message', onMessage);
+            worker.port.postMessage({
+              type: 'meat-scope-observe-conversions'
+            });
+          }
+        };
       });
     }
   };

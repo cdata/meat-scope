@@ -1,0 +1,160 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/app-pouchdb/app-pouchdb-document.html">
+<link rel="import" href="/bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<dom-module id="meat-scope-video-viewer">
+  <template>
+    <style>
+      :host {
+        display: block;
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+      }
+
+      img,
+      canvas {
+        max-width:100%;
+        height:100%;
+        display: block;
+        margin: auto;
+        border-radius: 3px;
+      }
+
+      :host(.landscape) img,
+      :host(.landscape) canvas {
+        width: 100%;
+        height: auto;
+        max-height: 100%;
+        max-width: auto;
+      }
+
+      img {
+        visibility: hidden;
+      }
+
+      img[src] {
+        visibility: visible;
+      }
+    </style>
+    <app-pouchdb-document
+        id="document"
+        db-name="meat-scope-videos"
+        doc-id="[[videoId]]"
+        attachments
+        binary
+        data="{{video}}">
+    </app-pouchdb-document>
+    <canvas id="canvas"></canvas>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-video-viewer',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        video: {
+          type: Object,
+          notify: true
+        },
+
+        videoId: {
+          type: String,
+          reflectToAttribute: true,
+          observer: '__videoIdChanged'
+        },
+
+        img: {
+          type: HTMLImageElement,
+          readOnly: true,
+          value: function() {
+            return document.createElement('img');
+          },
+          observer: '__imgChanged'
+        },
+
+        localUrl: {
+          type: String,
+          computed: '__computeLocalUrl(video._attachments.video)',
+          observer: '__localUrlChanged'
+        },
+
+        play: {
+          type: Boolean,
+          value: false,
+          observer: '__playChanged'
+        }
+      },
+
+      __videoIdChanged: function(videoId) {
+        if (videoId == null) {
+          this.$.document.reset();
+          this.$.canvas.getContext('2d').clearRect(
+              0, 0, this.$.canvas.width, this.$.canvas.height);
+          this.play = false;
+        }
+      },
+
+      __playChanged: function(play, oldPlay) {
+        var parent;
+
+        if (play) {
+          parent = Polymer.dom(Polymer.dom(this.$.canvas).parentNode);
+          parent.removeChild(this.$.canvas);
+          parent.appendChild(this.img);
+        } else if (oldPlay === true) {
+          parent = Polymer.dom(Polymer.dom(this.img).parentNode);
+          parent.removeChild(this.img);
+          parent.appendChild(this.$.canvas);
+        }
+      },
+
+      __imgChanged: function(img) {
+        if (img) {
+          img.addEventListener('load', this.__onImgLoad.bind(this));
+        }
+      },
+
+      __computeLocalUrl: function(video) {
+        if (video && video.data) {
+          return URL.createObjectURL(video.data, { type: video.content_type });
+        }
+
+        return null;
+      },
+
+      __localUrlChanged: function(localUrl) {
+        if (localUrl != null) {
+          this.img.src = localUrl;
+        } else {
+          this.img.removeAttribute('src');
+        }
+      },
+
+      __updateOrientation: function() {
+        var selfRect = this.getBoundingClientRect();
+        var imageRatio = this.img.width / this.img.height;
+        var selfRatio = selfRect.width / selfRect.height;
+
+        if (imageRatio > 1 && imageRatio > selfRatio) {
+          Polymer.dom(this).classList.add('landscape');
+        } else {
+          Polymer.dom(this).classList.remove('landscape');
+        }
+      },
+
+      __onImgLoad: function() {
+        this.$.canvas.width = this.img.width;
+        this.$.canvas.height = this.img.height;
+
+        this.__updateOrientation();
+
+        this.$.canvas.getContext('2d').drawImage(this.img, 0, 0);
+        this.async(function() {
+          this.fire('metrics-ready');
+        });
+      }
+    });
+  </script>
+</dom-module>

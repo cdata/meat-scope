@@ -8,7 +8,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        opacity: 0.05;
+        /*opacity: 0.05;*/
       }
 
       video {
@@ -34,18 +34,8 @@
         properties: {
           stream: {
             type: Object,
-            notify: true
-          },
-
-          objectUrl: {
-            type: Object,
-            computed: '__computeObjectUrl(stream)',
-            observer: '__objectUrlChanged'
-          },
-
-          canvas: {
-            type: HTMLCanvasElement,
-            value: document.createElement('canvas')
+            notify: true,
+            observer: '__streamChanged'
           },
 
           clamp: {
@@ -67,11 +57,6 @@
           this.__videoScale = 1;
           this.__videoTop = 0;
           this.__videoLeft = 0;
-          this.__context = null;
-        },
-
-        ready: function() {
-          this.__context = this.canvas.getContext('2d');
         },
 
         attached: function() {
@@ -98,23 +83,8 @@
           return this.__videoScale;
         },
 
-        __computeObjectUrl: function(stream) {
-          return stream ? window.URL.createObjectURL(stream) : null;
-        },
-
-        __objectUrlChanged: function(objectUrl, oldObjectUrl) {
-          if (objectUrl) {
-            this.$.video.src = objectUrl;
-            try {
-              this.$.video.play();
-            } catch (e) {}
-          } else {
-            this.$.video.pause();
-          }
-
-          if (oldObjectUrl) {
-            window.URL.revokeObjectURL(oldObjectUrl);
-          }
+        __streamChanged: function(stream) {
+          this.$.video.srcObject = stream;
         },
 
         __onIronResize: function() {

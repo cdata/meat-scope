@@ -1,0 +1,247 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="/bower_components/iron-icons/image-icons.html">
+<link rel="import" href="/bower_components/app-pouchdb/app-pouchdb-document.html">
+<link rel="import" href="/bower_components/app-pouchdb/app-pouchdb-query.html">
+<link rel="import" href="/bower_components/app-pouchdb/app-pouchdb-index.html">
+<link rel="import" href="meat-scope-video-progress.html">
+<link rel="import" href="meat-scope-video-viewer.html">
+<link rel="import" href="meat-scope-video-details.html">
+<dom-module id="meat-scope-videos">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-fit);
+
+        background-color: rgba(0, 0, 0, 0.5);
+        opacity: 1;
+        transition: opacity 0.3s;
+        will-change: opacity;
+
+        z-index: 1;
+      }
+
+      :host([hide]) {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #videos {
+        transform: translate(0, 0);
+        will-change: transform;
+        transition: transform 0.3s;
+
+        background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.75), transparent);
+        height: 100%;
+        width: 33%;
+        overflow: auto;
+      }
+
+      :host([hide]) #videos {
+        transform: translate(-10px, 0);
+      }
+
+      paper-icon-button {
+        color: #fff;
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+      }
+
+      meat-scope-video-viewer {
+        margin: 10%;
+        width: 80%;
+      }
+
+      meat-scope-video-details {
+        z-index: 1;
+      }
+    </style>
+    <app-route
+        route="{{route}}"
+        pattern="/videos/:id"
+        data="{{showVideoData}}"
+        active="{{showVideoRouteActive}}">
+    </app-route>
+
+    <section id="videos">
+      <template is="dom-repeat" items="[[videosInProgress]]" as="video">
+        <meat-scope-video-progress
+            progress="[[video.progress]]"
+            total="[[video.total]]">
+        </meat-scope-video-progress>
+      </template>
+      <template is="dom-repeat" items="[[videos]]" as="videoReference">
+        <a href="/videos/[[videoReference._id]]">
+          <meat-scope-video-viewer
+              video-id="[[videoReference._id]]"
+              on-tap="__onVideoViewerTap">
+          </meat-scope-video-viewer>
+        </a>
+      </template>
+    </section>
+
+    <meat-scope-video-details
+        id="videoDetails"
+        on-video-deleted="__onVideoDeleted"
+        video-id="{{showVideoData.id}}"
+        hide="[[!showVideoRouteActive]]">
+    </meat-scope-video-details>
+
+    <a href="/" id="back">
+      <paper-icon-button icon="image:camera">
+      </paper-icon-button>
+    </a>
+
+    <app-pouchdb-document
+        id="newVideoDocument"
+        db-name="meat-scope-videos">
+    </app-pouchdb-document>
+
+    <app-pouchdb-index
+        db-name="meat-scope-videos"
+        fields='["created"]'>
+    </app-pouchdb-index>
+
+    <app-pouchdb-query
+        id="videoQuery"
+        db-name="meat-scope-videos"
+        selector="created $gt 0"
+        fields='["_id", "created"]'
+        sort='[{"created":"desc"}]'
+        data="{{videos}}">
+    </app-pouchdb-query>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-videos',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        client: {
+          type: MeatScopeMediaClient,
+          value: function() {
+            return new MeatScopeMediaClient(
+                this.resolveUrl('meat-scope-media-worker.js'));
+          },
+          observer: '__clientChanged'
+        },
+
+        videoObserver: {
+          type: Object,
+          notify: true,
+          readOnly: true,
+          observer: '__videoObserverChanged'
+        },
+
+        videosInProgress: {
+          type: Array,
+          notify: true,
+          value: function() {
+            return [];
+          }
+        },
+
+        videos: {
+          type: Array,
+          notify: true
+        },
+
+        hide: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+      },
+
+      __clientChanged: function(client) {
+        if (client) {
+          client.makeConversionObserver().then(function(videoObserver) {
+            this._setVideoObserver(videoObserver);
+          }.bind(this));
+        }
+      },
+
+      __videoObserverChanged: function(videoObserver, oldVideoObserver) {
+        if (oldVideoObserver) {
+          oldVideoObserver.disconnect();
+        }
+
+        if (videoObserver) {
+          console.log('Video observer connecting...');
+          videoObserver.connect(function(event) {
+            var method = '__onVideo' + event[0].toUpperCase() + event.slice(1);
+            if (this[method]) {
+              this[method].apply(this, Array.prototype.slice.call(arguments, 1));
+            }
+          }.bind(this));
+        }
+      },
+
+      __onVideoEnqueued: function(data) {
+        this.unshift('videosInProgress', {
+          id: data.id,
+          progress: 0,
+          total: 1
+        });
+      },
+
+      __onVideoProgress: function(data) {
+        var video;
+
+        for (var i = 0; i < this.videosInProgress.length; ++i) {
+          video = this.videosInProgress[i];
+          if (video.id === data.id) {
+            this.set(['videosInProgress', i, 'total'], data.total);
+            this.set(['videosInProgress', i, 'progress'], data.progress);
+            break;
+          }
+        }
+      },
+
+      __onVideoComplete: function(data) {
+        var video = data.video;
+
+        window.requestAnimationFrame(function() {
+          for (var i = 0; i < this.videosInProgress.length; ++i) {
+            if (this.videosInProgress[i].id === data.id) {
+              this.splice('videosInProgress', i, 1);
+              break;
+            }
+          }
+
+          var videoDocument = {
+            created: Date.now(),
+            cloudLocation: null,
+            _attachments: {
+              'video': {
+                content_type: video.type,
+                data: video.blob
+              }
+            }
+          };
+
+          this.$.newVideoDocument.data = videoDocument;
+          this.$.newVideoDocument.save().then(function() {
+            this.$.videoQuery.refresh();
+            return this.$.newVideoDocument.reset();
+          }.bind(this));
+        }.bind(this));
+      },
+
+      __onVideoDeleted: function() {
+        this.$.videoQuery.refresh();
+      },
+
+      __onVideoViewerTap: function(event) {
+        var target = Polymer.dom(event).localTarget;
+        console.log('Origin element!', target);
+        this.$.videoDetails.originElement = target;
+      }
+    });
+  </script>
+</dom-module>

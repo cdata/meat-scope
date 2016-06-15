@@ -3,64 +3,110 @@
 <link rel="import" href="/bower_components/iron-icons/av-icons.html">
 <link rel="import" href="/bower_components/iron-icons/image-icons.html">
 <link rel="import" href="/bower_components/iron-icons/notification-icons.html">
-<link rel="import" href="/bower_components/iron-icons/av-icons.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="/bower_components/app-route/app-route.html">
 <link rel="import" href="meat-scope-devices.html">
 <link rel="import" href="meat-scope-record-button.html">
 <dom-module id="meat-scope-controls">
   <template>
     <style>
       :host {
-        @apply(--layout-vertical);
-        @apply(--layout-end);
+        position: absolute;
+        bottom: 0;
+        width: 100%;
         transition: transform 0.15s, opacity 0.15s;
         transform: translate(0);
         opacity: 1;
         will-change: opacity, transform;
       }
 
-      :host([hide]) {
-        transform: translate(10px, 0);
+      :host([hide]),
+      section[hide] {
+        transform: translate(0, 10px);
         opacity: 0;
+        pointer-events: none;
       }
 
-      paper-fab,
       meat-scope-record-button {
-        margin: 16px;
+        margin: 20px auto;
+      }
+
+      paper-fab {
+        margin: 20px 10px;
+      }
+
+      paper-icon-button {
+        color: #fff;
+        margin: 20px;
+      }
+
+      section {
+        @apply(--layout-flex);
+        @apply(--layout-horizontal);
+        @apply(--layout-end);
+        position: absolute;
+        width: 100%;
+        bottom: 0px;
+
+        transition: transform 0.15s, opacity 0.15s;
+        transform: translate(0);
+        opacity: 1;
+        will-change: opacity, transform;
+      }
+
+      #settings {
+        @apply(--layout-end-justified);
       }
     </style>
 
-    <!-- <paper-fab
-        mini
-        icon="image:photo-filter"
-        disabled>
-    </paper-fab> -->
-    <paper-fab
-        mini
-        icon="image:crop-free"
-        disabled>
-    </paper-fab>
-    <paper-fab
-        mini
-        icon="av:av-timer"
-        disabled>
-    </paper-fab>
-    <paper-fab
-        mini
-        icon="[[__computeCameraIcon(selectedCamera)]]"
-        on-tap="__onSwitchCamerasTap"
-        hidden$="[[!hasMultipleCameras]]">
-    </paper-fab>
 
-    <meat-scope-record-button
-        on-tap="__onRecordTap">
-    </meat-scope-record-button>
+    <section id="main" hide$=[[showSettings]]>
+      <a href="/videos">
+        <paper-icon-button icon="av:subscriptions">
+        </paper-icon-button>
+      </a>
+      <meat-scope-record-button
+          on-tap="__onRecordTap">
+      </meat-scope-record-button>
+      <a href="/settings">
+        <paper-icon-button icon="av:movie">
+        </paper-icon-button>
+      </a>
+    </section>
+    <section id="settings" hide$=[[!showSettings]]>
+      <paper-fab
+          mini
+          icon="image:crop-free"
+          disabled>
+      </paper-fab>
+      <paper-fab
+          mini
+          icon="av:av-timer"
+          disabled>
+      </paper-fab>
+      <paper-fab
+          mini
+          icon="[[__computeCameraIcon(selectedCamera)]]"
+          on-tap="__onSwitchCamerasTap"
+          hidden$="[[!hasMultipleCameras]]">
+      </paper-fab>
+      <a href="/">
+        <paper-icon-button icon="close">
+        </paper-icon-button>
+      </a>
+    </section>
   </template>
   <script>
     Polymer({
       is: 'meat-scope-controls',
 
       properties: {
+        showSettings: {
+          type: Boolean,
+          value: false
+        },
+
         hide: {
           type: Boolean,
           reflectToAttribute: true,
@@ -68,7 +114,7 @@
         },
 
         selectedCamera: {
-          type: String
+          type: Object
         },
 
         hasMultipleCameras: {
@@ -78,7 +124,8 @@
       },
 
       __computeCameraIcon: function(selectedCamera) {
-        return selectedCamera === 'environment' ?
+        var rear = /environment|rear|back/i.test(selectedCamera.label)
+        return rear ?
             'image:camera-front' :
             'image:camera-rear';
       },

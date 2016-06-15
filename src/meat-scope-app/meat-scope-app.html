@@ -2,7 +2,7 @@
 <link rel="import" href="/bower_components/app-route/app-location.html">
 <link rel="import" href="/bower_components/app-route/app-route.html">
 <link rel="import" href="meat-scope-camera.html">
-<link rel="import" href="meat-scope-gallery.html">
+<link rel="import" href="meat-scope-videos.html">
 <dom-module id="meat-scope-app">
   <template>
     <style>
@@ -11,7 +11,8 @@
         position: relative;
         width: 100vw;
         height: 100vh;
-        background: #ccc;
+        background-color: #000;
+        overflow: hidden;
 
         --paper-fab: {
           color: var(--paper-light-blue-50);
@@ -31,22 +32,22 @@
 
     <app-route
         route="{{route}}"
-        pattern="/gallery"
-        active="{{viewingGallery}}">
+        pattern="/videos"
+        active="{{videosRouteActive}}">
     </app-route>
 
     <meat-scope-camera
         id="camera"
-        use-secondary-camera="{{useSecondaryCamera}}"
-        disabled="[[viewingGallery]]"
-        on-video-recorded="__onVideoRecorded">
+        disabled="[[videosRouteActive]]"
+        route="{{route}}">
     </meat-scope-camera>
 
-    <meat-scope-gallery
+    <meat-scope-videos
         id="gallery"
         videos="{{videos}}"
-        hide="[[!viewingGallery]]">
-    </meat-scope-gallery>
+        route="{{route}}"
+        hide="[[!videosRouteActive]]">
+    </meat-scope-videos>
   </template>
 
   <script>
@@ -55,32 +56,10 @@
       is: 'meat-scope-app',
 
       properties: {
-        videos: {
-          type: Array,
-          notify: true,
-          value: function() {
-            return [];
-          }
-        },
-
-        useSecondaryCamera: {
-          type: Boolean,
-          readOnly: true,
-          value: false
-        },
-
         previewVideoUrl: {
           type: String,
           value: null
         }
-      },
-
-      observers: [
-        // '__videosChanged(videos.length)'
-      ],
-
-      __onVideoRecorded: function(event) {
-        this.unshift('videos', event.detail.video);
       }
     });
   </script>

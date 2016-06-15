@@ -30,17 +30,15 @@
         };
       })();
 
-      var cameras = [];
-
-      var devicesEnumerate = enumerateDevices().then(function(devices) {
+      function enumerateCameras() {
         var videoMatch = /video/i;
 
-        for (var i = 0; i < devices.length; ++i) {
-          if (videoMatch.test(devices[i].kind)) {
-            cameras.push(devices[i]);
-          }
-        }
-      });
+        return enumerateDevices().then(function(devices) {
+          return devices.filter(function(device) {
+            return videoMatch.test(device.kind);
+          });
+        });
+      }
 
       Polymer({
         is: 'meat-scope-devices',
@@ -52,24 +50,38 @@
             notify: true
           },
 
-          cameraOne: {
-            type: Object,
-            readOnly: true,
-            notify: true
+          selectedCameraIndex: {
+            type: Number,
+            value: 0,
+            observer: '__selectedCameraIndexChanged'
           },
 
-          cameraTwo: {
+          selectedCamera: {
             type: Object,
-            readOnly: true,
-            notify: true
+            notify: true,
+            readOnly: true
           }
         },
 
         ready: function() {
-          devicesEnumerate.then(function() {
+          enumerateCameras().then(function(cameras) {
             this._setHasMultipleCameras(cameras.length > 1);
-            this._setCameraOne(cameras[0]);
-            this._setCameraTwo(cameras[1]);
+          }.bind(this));
+        },
+
+        switchToNextCamera: function() {
+          return enumerateCameras().then(function(cameras) {
+            if ((this.selectedCameraIndex + 1) < cameras.length) {
+              this.selectedCameraIndex++;
+            } else {
+              this.selectedCameraIndex = 0;
+            }
+          }.bind(this));
+        },
+
+        __selectedCameraIndexChanged: function(selectedCameraIndex) {
+          enumerateCameras().then(function(cameras) {
+            this._setSelectedCamera(cameras[selectedCameraIndex]);
           }.bind(this));
         }
       });

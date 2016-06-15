@@ -1,0 +1,74 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<script>
+  (function() {
+    var uploadAjax = document.createElement('iron-ajax');
+    uploadAjax.url = 'https://gifaffe.s3.amazonaws.com/'
+    var transcodeAjax = document.createElement('iron-ajax');
+    var transcodeBaseUrl = 'https://upload.gfycat.com/transcode/';
+    var statusBaseUrl = 'https://gfycat.com/cajax/get/';
+
+    function randomString() {
+      var parts = [];
+      for (var i = 0; i < 5; ++i) {
+        parts.push((0|1 + Math.random() * 0xfe).toString(16))
+      }
+      return parts.join('');
+    }
+
+    function post(blob) {
+      var formData = new FormData();
+      var key = randomString();
+
+      formData.append('key', key);
+      formData.append('acl', 'private');
+      formData.append('AWSAccessKeyId', 'AKIAIT4VU4B7G2LQYKZQ');
+      formData.append(
+        'policy',
+        'eyAiZXhwaXJhdGlvbiI6ICIyMDIwLTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICAgICAgICAgICAiY29uZGl0aW9ucyI6IFsKICAgICAgICAgICAgeyJidWNrZXQiOiAiZ2lmYWZmZSJ9LAogICAgICAgICAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAiIl0sCiAgICAgICAgICAgIHsiYWNsIjogInByaXZhdGUifSwKCSAgICB7InN1Y2Nlc3NfYWN0aW9uX3N0YXR1cyI6ICIyMDAifSwKICAgICAgICAgICAgWyJzdGFydHMtd2l0aCIsICIkQ29udGVudC1UeXBlIiwgIiJdLAogICAgICAgICAgICBbImNvbnRlbnQtbGVuZ3RoLXJhbmdlIiwgMCwgNTI0Mjg4MDAwXQogICAgICAgICAgICBdCiAgICAgICAgICB9');
+      formData.append('success_action_status', 200);
+      formData.append('signature', 'mk9t/U/wRN4/uU01mXfeTe2Kcoc=');
+      formData.append('Content-Type', 'image/gif');
+      formData.append('file', blob, 'image.gif');
+
+      uploadAjax.method = 'POST';
+      uploadAjax.body = formData;
+
+      function monitorStatus(gfyName, backoff) {
+        return new Promise(function(resolve) {
+          var wait = 0;
+
+          if (backoff) {
+            wait += backoff;
+          }
+
+          window.setTimeout(function() {
+            transcodeAjax.url = statusBaseUrl + gfyName;
+            resolve(transcodeAjax.generateRequest().completes
+                .then(function(request) {
+                  var gfyData = request.response.gfyItem;
+
+                  if (!gfyData.gifUrl) {
+                    backoff = backoff ? backoff * 2 : 100;
+                    return monitorStatus(gfyName, backoff);
+                  }
+
+                  return gfyData;
+                }));
+          }, wait);
+        });
+      }
+
+      return uploadAjax.generateRequest().completes.then(function() {
+        transcodeAjax.url = transcodeBaseUrl + key;
+        return transcodeAjax.generateRequest().completes.then(function(request) {
+          return monitorStatus(request.response.gfyName);
+        });
+      });
+    }
+
+    window.MeatScopeGfycatService = {
+      post: post
+    };
+  })();
+</script>

@@ -43,7 +43,7 @@
         frame.data.set(
             data.slice(
                 linearOffset,
-                linearOffset + cellPixelWidth * (this.height - 1)),
+                linearOffset + cellPixelWidth * (this.height)),
             0);
       } else {
         for (var y = 0; y < this.height; ++y) {
@@ -100,7 +100,7 @@
 
 
   function MeatScopeGifEncoder(width, height) {
-    this.gifEncoder = new GIFEncoder();
+    this.gifEncoder = new GIFEncoder(width, height);
     this.gifEncoder.writeHeader();
 
     this.gifEncoder.setRepeat(0);
@@ -109,8 +109,8 @@
 
   MeatScopeGifEncoder.prototype = {
     addFrame: function(frame) {
-      gifEncoder.setGlobalPalette(false);
-      gifEncoder.addFrame(frame.data);
+      this.gifEncoder.setGlobalPalette(false);
+      this.gifEncoder.addFrame(frame.data);
     },
 
     finish: function() {
@@ -128,13 +128,22 @@
         offset += page.length;
       }
 
-      return Promise.resolve(new Blob([data], { type: 'image/gif' }));
+      console.log(data.toString());
+
+      // return Promise.resolve({
+      //   data: data,
+      //   type: 'image/gif'
+      // });
+      return Promise.resolve({
+        blob: new Blob([data], { type: 'image/gif' }),
+        type: 'image/gif'
+      });
     }
   }
 
 
   function MeatScopeWhammyEncoder(width, height) {
-    this.whammy = new self.Whammy.Video(1000/24);
+    this.whammy = new self.Whammy.Video(24);
   }
 
   MeatScopeWhammyEncoder.prototype = {
@@ -163,19 +172,19 @@
     this.encoder.WebPEncodeConfig({
       target_size: 0,
       target_PSNR: 0.,
-      method: 3, // quality, 0 - 6
+      method: 4, // quality, 0 - 6
       sns_strength: 50, // spatial noise shaping, 0 - 100
       filter_strength: 20, // 0 (off) - 100 (strongest)
       filter_sharpness: 0, // 0 (off) - 7 (least sharp)
       filter_type: 0, // 0: simple, 1: strong (only if strength > 0 or autofilter > 0)
-      partitions: 0, // log2(number of token partitions) in [0..3]
-      segments: 4, // max segments, 1 - 4
+      partitions: 1, // log2(number of token partitions) in [0..3]
+      segments: 2, // max segments, 1 - 4
       pass: 1, // number of entropy-analysis passes, 1 - 10
       show_compressed: 0, // boolean
-      preprocessing: 0, // preprocessing filter, 0: none, 1: segment-smooth
-      autofilter: 0, // boolean
+      preprocessing: 1, // preprocessing filter, 0: none, 1: segment-smooth
+      autofilter: 1, // boolean
       partition_limit: 0, // ???
-      extra_info_type: 2, // print extra_info ???
+      extra_info_type: 0, // print extra_info ???
       preset: 0 // 0: default, 1: picture, 2: photo, 3: drawing, 4: icon, 5: text
     });
   }
@@ -193,7 +202,7 @@
           this.width,
           this.height,
           this.width * 4,
-          100, // quality, 0 - 100
+          50, // quality, 0 - 100
           result);
       dataUrl = 'data:image/webp;base64,' + btoa(result.output);
     } else {
@@ -214,7 +223,10 @@
     webm: MeatScopeWebmEncoder
   };
 
+  var nextConverterId = 0;
+
   function MeatScopeMediaConverter(input) {
+    this.id = nextConverterId++;
     this.progressHandlers = [];
     this.input = input;
 
@@ -232,6 +244,7 @@
         var index = 0;
 
         (function nextFrame() {
+          console.log(index);
           var frame = slicer.readFrame(index++);
           encoder.addFrame(frame);
 

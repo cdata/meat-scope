@@ -1,6 +1,9 @@
-self.importScripts(['meat-scope-media-converter.js']);
+self.importScripts(['/src/meat-scope-app/meat-scope-media-converter.js']);
 
-function MeatScopeMediaWorker() {}
+function MeatScopeMediaWorker() {
+  this.jobQueue = Promise.resolve();
+  this.conversionObservers = [];
+}
 
 MeatScopeMediaWorker.prototype = {
   registerClient: function(port) {
@@ -11,8 +14,18 @@ MeatScopeMediaWorker.prototype = {
     });
   },
 
-  convert: function(input) {
-    return new MeatScopeMediaConverter(input);
+  enqueueJob: function(job) {
+    return this.jobQueue = this.jobQueue.then(function() {
+      return job.call(this);
+    }.bind(this)).catch(function(error) {
+      console.error('Job failed.', error);
+    });
+  },
+
+  notifyConversionObservers: function(message) {
+    this.conversionObservers.forEach(function(port) {
+      port.postMessage(message);
+    });
   },
 
   onClientMessage: function(port, event) {
@@ -23,20 +36,52 @@ MeatScopeMediaWorker.prototype = {
     }
 
     switch (data.type) {
+      case 'meat-scope-observe-conversions':
+        this.conversionObservers.push(port);
+        break;
+      case 'meat-scope-ignore-conversions':
+        var index = this.conversionObservers.indexOf(port);
+        if (index > -1) {
+          this.conversionObservers.splice(index, 1);
+        }
+        break;
       case 'meat-scope-convert-to-video':
-        this.convert(data.input).to(data.outputType, function(progress, total) {
-          port.postMessage({
-            type: 'meat-scope-video-progress',
-            progress: progress,
-            total: total
-          });
-        }).then(function(blob) {
-          port.postMessage({
-            type: 'meat-scope-video-ready',
-            id: data.id,
-            blob: blob
+        var converter = new MeatScopeMediaConverter(data.input);
+
+        this.notifyConversionObservers({
+          type: 'meat-scope-conversion-enqueued',
+          converterId: converter.id
+        });
+
+        this.enqueueJob(function() {
+          return converter.to(data.outputType, function(progress, total) {
+            this.notifyConversionObservers({
+              type: 'meat-scope-conversion-progress',
+              converterId: converter.id,
+              progress: progress,
+              total: total
+            });
+          }.bind(this)).then(function(video) {
+            var message = {
+              type: 'meat-scope-conversion-complete',
+              id: data.id,
+              converterId: converter.id,
+              video: video
+            };
+            this.notifyConversionObservers(message);
+            port.postMessage(message);
+          }.bind(this)).catch(function(error) {
+            var error = {
+              type: 'error',
+              id: data.id,
+              converterId: converter.id,
+              error: error
+            };
+            this.notifyConversionObservers(error);
+            port.postMessage(error);
           });
         });
+
         break;
     }
   }

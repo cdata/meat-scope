@@ -1,0 +1,289 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/app-pouchdb/app-pouchdb-document.html">
+<link rel="import" href="/bower_components/app-storage/app-network-status-behavior.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="meat-scope-gfycat-service.html">
+<link rel="import" href="meat-scope-video-viewer.html">
+<script src="/bower_components/clipboard/dist/clipboard.js"></script>
+<dom-module id="meat-scope-video-details">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-fit);
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+
+        transition: background-color 0.3s;
+        transition-delay: 0.3s;
+        background-color: #00A7F7;
+
+        --paper-fab-background: #F15092;
+      }
+
+      :host([hide]) {
+        pointer-events: none;
+        transition-delay: 0s;
+        background-color: transparent;
+      }
+
+      :host([hide]) #controls {
+        transform: translateY(200px);
+      }
+
+      #controls {
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+        margin: 20px;
+        will-change: transform;
+        transform: translateY(0);
+        transition: transform 0.5s cubic-bezier(.7,-0.29,.28,1.27);
+      }
+
+      .row > * {
+        margin: 0 20px;
+      }
+
+      .row {
+        @apply(--layout-horizontal)
+        @apply(--layout-center-center);
+        margin: 0 0 20px;
+      }
+
+      meat-scope-video-viewer {
+        position: relative;
+        transform-origin: 0 0;
+        margin-top: 40px;
+        width: calc(100% - 40px);
+        height: 75%;
+      }
+
+      paper-icon-button {
+        color: #fff;
+      }
+
+      #videoUrl {
+        background-color: transparent;
+        outline: none;
+        border: 0;
+        color: #fff;
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+        border-bottom: 2px solid #fff;
+        width: 50%;
+        min-width: 320px;
+      }
+    </style>
+    <meat-scope-video-viewer
+        id="viewer"
+        video-id="[[videoId]]"
+        video="{{video}}"
+        on-metrics-ready="__onViewerMetricsReady">
+    </meat-scope-video-viewer>
+    <section id="controls">
+      <div class="row">
+        <a href="/videos">
+          <paper-icon-button icon="arrow-back"></paper-icon-button>
+        </a>
+        <paper-fab
+            mini
+            on-tap="deleteVideo"
+            icon="delete">
+        </paper-fab>
+        <paper-fab
+            id="cloud"
+            mini
+            disabled="[[__computeCloudDisabled(online, uploading)]]"
+            class$="[[__computeCloudIcon(video.cloudLocation)]]"
+            on-tap="__onCloudTap"
+            data-clipboard-target="#videoUrl"
+            icon="[[__computeCloudIcon(video.cloudLocation)]]">
+        </paper-fab>
+      </div>
+      <template is="dom-if" if="[[video.cloudLocation]]">
+        <input
+            id="videoUrl"
+            type="text"
+            readonly
+            value="[[video.cloudLocation.data.gifUrl]]">
+      </template>
+    </section>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-video-details',
+
+      behaviors: [
+        Polymer.AppNetworkStatusBehavior
+      ],
+
+      properties: {
+        videoId: {
+          type: String
+        },
+
+        video: {
+          type: Object,
+          notify: true
+        },
+
+        uploading: {
+          type: Boolean,
+          notify: true,
+          value: false
+        },
+
+        hide: {
+          type: Boolean,
+          reflectToAttribute: true,
+          observer: '__hideChanged'
+        },
+
+        originElement: {
+          type: HTMLElement,
+          value: null
+        },
+
+        originRect: {
+          type: Object,
+          computed: '__computeOriginRect(originElement)'
+        },
+
+        clipboard: {
+          type: Object,
+          value: function() {
+            return new Clipboard('.content-copy');
+          }
+        }
+      },
+
+      created: function() {
+        this.__animates = Promise.resolve();
+      },
+
+      deleteVideo: function() {
+        this.set('video._deleted', true);
+        this.$.viewer.$.document.transactionsComplete.then(function() {
+          this.fire('video-deleted');
+          window.history.pushState({}, '', '/videos');
+          this.fire('location-changed');
+        }.bind(this));
+      },
+
+      __computeCloudDisabled: function(online, uploading) {
+        return !online || uploading;
+      },
+
+      __computeOriginRect: function(originElement) {
+        if (originElement) {
+          return originElement.getBoundingClientRect();
+        }
+
+        return {
+          top: 0,
+          left: 0,
+          width: window.innerWidth,
+          height: window.innerHeight
+        };
+      },
+
+      __computeCloudIcon: function(cloudLocation) {
+        if (cloudLocation) {
+          return 'content-copy';
+        } else {
+          return 'cloud-upload';
+        }
+      },
+
+      __hideChanged: function(hide) {
+        if (hide) {
+          if (this.originElement) {
+            this.originElement.style.visibility = '';
+          }
+          this.__animates = this.__animates.then(this.__close.bind(this));
+        }
+      },
+
+      __onCloudTap: function() {
+        if (!this.video.cloudLocation) {
+          this.uploading = true;
+          return MeatScopeGfycatService.post(this.video._attachments.video.data)
+              .then(function(gfycatData) {
+                this.set('video.cloudLocation', {
+                  type: 'gfycat',
+                  data: gfycatData
+                });
+              }.bind(this)).catch(function(error) {
+                console.error(error);
+              }).then(function() {
+                this.uploading = false;
+              }.bind(this));
+        }
+      },
+
+      __onViewerMetricsReady: function() {
+        if (!this.classList.contains('open')) {
+          this.__animates = this.__animates.then(this.__open.bind(this));
+        }
+      },
+
+      __open: function() {
+        var imgWidth = this.$.viewer.img.width;
+        var imgHeight = this.$.viewer.img.height;
+        var ratio = imgWidth / imgHeight;
+
+        this.$.viewer.play = true;
+
+        if (this.originElement) {
+          this.originElement.style.visibility = 'hidden';
+        }
+
+        this.$.viewer.style.transform = '';
+
+        var targetRect = this.$.viewer.getBoundingClientRect();
+        var originRect = this.originRect;
+        var offsetWidth = targetRect.width - originRect.width;
+        var offsetScale = 1 - offsetWidth / targetRect.width;
+
+        var offsetTop = (originRect.top - targetRect.top) / offsetScale
+        var offsetLeft = (originRect.left - targetRect.left) / offsetScale;
+
+        var offsetTransform =
+            'scale(' + offsetScale + ') translate(' + offsetLeft + 'px, ' + offsetTop + 'px)'
+
+        var animation = this.$.viewer.animate([{
+          transform: offsetTransform,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }, {
+          transform: 'scale(1) translate(0, 0)'
+        }], 300);
+
+        return new Promise(function(resolve) {
+          animation.addEventListener('finish', resolve);
+        }).then(function() {
+          this.classList.add('open');
+        }.bind(this));
+      },
+
+      __close: function() {
+        var animation = this.animate([{
+          transform: 'translate(0, 0)',
+          opacity: 1
+        }, {
+          transform: 'translate(0, -10px)',
+          opacity: 0
+        }], 300);
+
+        return new Promise(function(resolve) {
+          animation.addEventListener('finish', resolve);
+        }).then(function() {
+          this.videoId = null;
+          this.classList.remove('open');
+        }.bind(this));
+      },
+    });
+  </script>
+</dom-module>

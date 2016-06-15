@@ -34,7 +34,7 @@
           },
 
           device: {
-            type: String,
+            type: Object,
             notify: true
           },
 
@@ -55,11 +55,13 @@
         },
 
         getUserMedia: function() {
-          console.log(getUserMedia, this.device);
+          console.log('Changing device to:', this.device.label);
           return getUserMedia({
             audio: false,
             video: {
-              facingMode: this.device
+              deviceId: {
+                exact: this.device.deviceId
+              }
             }
           });
         },
@@ -81,6 +83,7 @@
         },
 
         __streamChanged: function(stream, oldStream) {
+          console.log('Stream changed!', stream);
           if (oldStream) {
             oldStream.getTracks().forEach(function(track) {
               track.stop();

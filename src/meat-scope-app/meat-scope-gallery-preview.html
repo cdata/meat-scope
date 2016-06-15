@@ -40,12 +40,13 @@
         id="link"
         href="/gallery">
         <!-- href="javascript:void(0)"> -->
-      <video
+      <img id="video">
+      <!-- <video
           on-tap="preview"
           id="video"
           autoplay
           loop>
-      </video>
+      </video> -->
     </a>
   </template>
   <script>
@@ -86,7 +87,7 @@
         this.debounce('pause-or-play', function() {
           if (this.hide || this.disabled) {
             if (!this.$.video.paused) {
-              this.$.video.pause();
+              // this.$.video.pause();
             }
           } else {
             if (this.$.video.paused) {
