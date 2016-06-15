@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const app = express();
 
@@ -10,7 +11,7 @@ function resolveHostname() {
 }
 
 function resolveStaticFolder() {
-  return process.env.MEAT_SCOPE_STATIC_FOLDER || './client';
+  return path.resolve(process.env.MEAT_SCOPE_STATIC_FOLDER || './client');
 }
 
 const staticFolder = resolveStaticFolder();
