@@ -165,7 +165,7 @@
         var filmStrip = new MeatScopeFilmStrip(
             this.$.video, this.clamp,
             /environment|rear|back/i.test(this.selectedCamera.label) ?
-                'mirror' : 'none');
+                'none' : 'mirror');
 
         return new Promise(function(resolve, reject) {
           var frames = [];
