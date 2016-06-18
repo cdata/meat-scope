@@ -1,0 +1,109 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<dom-module id="meat-scope-about">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-fit);
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+        background-color: var(--meat-scope-blue);
+        text-align: center;
+        padding: 0 20%;
+        -webkit-font-smoothing: antialiased;
+
+        will-change: transform, opacity;
+        transition: transform 0.3s, opacity 0.3s;
+        transform: scale(1);
+        transform-origin: center center;
+
+        --paper-fab-background: var(--meat-scope-pink);
+      }
+
+      :host([disabled]) {
+        transform: scale(1.5);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      p a {
+        font-weight: bold;
+        color: var(--meat-scope-pink);
+        background-color: var(--meat-scope-light-blue);
+        padding: 1px 4px;
+        border-radius: 4px;
+        background-color: #fff;
+        text-decoration: none;
+      }
+
+      span > p {
+        margin: 0;
+        font-style: italic;
+      }
+
+      #logo {
+        display: inline-block;
+        position: relative;
+        width: 128px;
+        height: 136px;
+      }
+
+      #logo:before,
+      #logo:after {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('/src/images/meat_scope_sprite_sheet.svg');
+        background-size: var(--meat-scope-sprite-sheet-size);
+        background-repeat: no-repeat;
+      }
+
+      #logo:after {
+        background-position: -276px 4px;
+      }
+
+      #logo:before {
+        background-position: -402px 4px;
+      }
+
+      paper-fab {
+        margin: 1em;
+      }
+
+    </style>
+    <div id="logo"></div>
+    <p>Meatscope helps you record gifs and share them with your friends. Consider adding
+it to your home screen!</p>
+    <h2>The Meatscope Promise</h2>
+    <span>
+      <p>No account required</p>
+      <p>Works offline</p>
+      <p>Easy on your data plan</p>
+      <p>You are always in control</p>
+      <p>Meatiest gifs or your money back</p>
+    </span>
+    <p>The source code for Meatscope is freely available on
+<a href="https://github.com/cdata/meat-scope" target="_blank">Github</a>.</p>
+    <a href="/record">
+      <paper-fab icon="arrow-back"></paper-fab>
+    </a>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-about',
+
+      properties: {
+        disabled: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        }
+      }
+    })
+  </script>
+</dom-module>

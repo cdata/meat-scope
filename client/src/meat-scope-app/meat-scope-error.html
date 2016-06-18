@@ -1,0 +1,62 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<dom-module id="meat-scope-error">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-fit);
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+        background-color: var(--meat-scope-blue);
+        text-align: center;
+        padding: 0 20%;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      :host([disabled]) {
+        display: none;
+      }
+
+      #sadfari {
+        display: block;
+        background-image: url('/src/images/meat_scope_sprite_sheet.svg');
+        background-size: var(--meat-scope-sprite-sheet-size);
+        width: 146px;
+        height: 128px;
+        background-position: -560px 0;
+        margin: 1em;
+      }
+
+      a {
+        font-weight: bold;
+        color: var(--meat-scope-pink);
+        background-color: var(--meat-scope-light-blue);
+        padding: 1px 4px;
+        border-radius: 4px;
+        background-color: #fff;
+        text-decoration: none;
+      }
+    </style>
+    <h1>Something went wrong...</h1>
+    <p>Meatscope isn't working as intended. If you're feeling raw about it,
+tap <a href="/">here</a> to try again!</p>
+    <div id="sadfari"></div>
+
+    <p><strong>Important note:</strong> Meatscope requires a browser that can access your webcam.
+Apple Safari does not support this feature. If you would like to use
+Meatscope on Safari, please consider letting Apple know about it <a href="https://bugs.webkit.org/show_bug.cgi?id=146746" target="_blank">here</a>!</p>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-error',
+
+      properties: {
+        disabled: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        }
+      }
+    })
+  </script>
+</dom-module>

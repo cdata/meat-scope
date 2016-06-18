@@ -54,6 +54,16 @@
           this.__requestingUserMedia = null;
         },
 
+        reset: function() {
+          this._setStream(null);
+          this.active = false;
+        },
+
+        activate: function() {
+          this.active = true;
+          return this.__requestingUserMedia;
+        },
+
         getUserMedia: function() {
           console.log('Changing device to:', this.device.label);
           return getUserMedia({
@@ -73,6 +83,8 @@
                   this.__requestingUserMedia = null;
                   if (this.active) {
                     this._setStream(stream);
+                  } else {
+                    this.reset();
                   }
                 }.bind(this)).catch(function(error) {
                   console.error(error);

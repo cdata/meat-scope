@@ -1,15 +1,15 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/app-storage/app-indexeddb-mirror/common-worker.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="meat-scope-user-media.html">
 <link rel="import" href="meat-scope-video.html">
 <link rel="import" href="meat-scope-media-client.html">
 <link rel="import" href="meat-scope-devices.html">
-<link rel="import" href="meat-scope-spinner.html">
+<link rel="import" href="meat-scope-camera-progress.html">
 <link rel="import" href="meat-scope-controls.html">
 <link rel="import" href="meat-scope-film-strip.html">
 <link rel="import" href="meat-scope-gallery-preview.html">
-
 <dom-module id="meat-scope-camera">
   <template>
     <style>
@@ -20,7 +20,7 @@
         background-size: 100%;
       }
 
-      meat-scope-spinner {
+      meat-scope-camera-progress {
         position: absolute;
         top: calc(50% - 74px);
         left: calc(50% - 74px);
@@ -56,15 +56,16 @@
         pattern="/settings"
         active="{{settingsRouteActive}}">
     </app-route>
+
     <meat-scope-devices
         id="devices"
         has-multiple-cameras="{{hasMultipleCameras}}"
         selected-camera="{{selectedCamera}}">
     </meat-scope-devices>
     <meat-scope-user-media
+        id="media"
         device="[[selectedCamera]]"
-        stream="{{stream}}"
-        active>
+        stream="{{stream}}">
     </meat-scope-user-media>
     <meat-scope-video
         id="video"
@@ -72,12 +73,12 @@
         stream="[[stream]]"
         clamp="[[clamp]]">
     </meat-scope-video>
-    <meat-scope-spinner
-        id="spinner"
+    <meat-scope-camera-progress
+        id="progress"
         lead-time="[[leadTime]]"
         run-time="[[recordTime]]"
         active="[[recording]]">
-    </meat-scope-spinner>
+    </meat-scope-camera-progress>
     <meat-scope-controls
         id="controls"
         has-multiple-cameras="[[hasMultipleCameras]]"
@@ -110,6 +111,11 @@
             return new MeatScopeMediaClient(
                 this.resolveUrl('meat-scope-media-worker.js'));
           }
+        },
+
+        stream: {
+          type: Object,
+          notify: true
         },
 
         leadTime: {
@@ -159,6 +165,26 @@
       detached: function() {
         this.unlisten(this.__ownerHost, 'videos-updated', '__onVideosUpdated');
         this.__ownerHost = null;
+      },
+
+      activate: function() {
+        return new Promise(function(resolve, reject) {
+          var checkStream = function() {
+            this.debounce('check-stream', function() {
+              if (this.stream != null) {
+                resolve({ status: 'okay' });
+                clearTimeout(timeout);
+              }
+            }, 3000);
+          }.bind(this);
+
+          this.$.media.reset();
+          this.$.media.activate().then(checkStream);
+
+          var timeout = setTimeout(function() {
+            reject(new Error('No User Media Stream received!'));
+          }, 30000);
+        }.bind(this));
       },
 
       record: function() {

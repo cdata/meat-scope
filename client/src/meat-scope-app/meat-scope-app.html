@@ -3,6 +3,9 @@
 <link rel="import" href="../../bower_components/app-route/app-route.html">
 <link rel="import" href="meat-scope-camera.html">
 <link rel="import" href="meat-scope-videos.html">
+<link rel="import" href="meat-scope-splash.html">
+<link rel="import" href="meat-scope-error.html">
+<link rel="import" href="meat-scope-about.html">
 <dom-module id="meat-scope-app">
   <template>
     <style>
@@ -11,8 +14,17 @@
         position: relative;
         width: 100vw;
         height: 100vh;
-        background-color: #000;
+        background-color: var(--paper-light-blue-500);
         overflow: hidden;
+
+        font-family: sans-serif;
+        color: #fff;
+
+        --meat-scope-blue: var(--paper-light-blue-500);
+        --meat-scope-light-blue: #b1e5fd;
+        --meat-scope-pink: #f15092;
+        --meat-scope-light-pink: #fcdde9;
+        --meat-scope-sprite-sheet-size: 706px 128px;
 
         --paper-fab: {
           color: var(--paper-light-blue-50);
@@ -22,8 +34,24 @@
         --paper-fab-keyboard-focus-background: var(--paper-light-blue-300);
       }
 
-      meat-scope-gallery {
+      meat-scope-camera {
         z-index: 1;
+      }
+
+      meat-scope-gallery {
+        z-index: 2;
+      }
+
+      meat-scope-error {
+        z-index: 3;
+      }
+
+      meat-scope-splash {
+        z-index: 4;
+      }
+
+      meat-scope-about {
+        z-index: 5;
       }
     </style>
     <app-location
@@ -32,14 +60,40 @@
 
     <app-route
         route="{{route}}"
+        pattern="/"
+        active="{{rootRouteActive}}"
+        on-active-changed="__onRootRouteActiveChanged">
+    </app-route>
+
+    <app-route
+        route="{{route}}"
+        pattern="/error"
+        active="{{errorRouteActive}}">
+    </app-route>
+
+    <app-route
+        route="{{route}}"
         pattern="/videos"
         active="{{videosRouteActive}}">
     </app-route>
 
+    <app-route
+        route="{{route}}"
+        pattern="/about"
+        active="{{aboutRouteActive}}">
+    </app-route>
+
+    <app-route
+        route="{{route}}"
+        pattern="/record"
+        active="{{recordRouteActive}}"
+        tail="{{recordRoute}}">
+    </app-route>
+
     <meat-scope-camera
         id="camera"
-        disabled="[[videosRouteActive]]"
-        route="{{route}}">
+        disabled="[[!recordRouteActive]]"
+        route="{{recordRoute}}">
     </meat-scope-camera>
 
     <meat-scope-videos
@@ -49,6 +103,18 @@
         hide="[[!videosRouteActive]]"
         videos-in-progress="{{videosInProgress}}">
     </meat-scope-videos>
+
+    <meat-scope-splash
+        disabled="[[!rootRouteActive]]">
+    </meat-scope-splash>
+
+    <meat-scope-error
+        disabled="[[!errorRouteActive]]">
+    </meat-scope-error>
+
+    <meat-scope-about
+        disabled="[[!aboutRouteActive]]">
+    </meat-scope-about>
   </template>
 
   <script>
@@ -66,8 +132,16 @@
         '__videosInProgressChanged(videosInProgress.length)'
       ],
 
+      listeners: {
+        'meat-scope-error': '__onMeatScopeError'
+      },
+
       created: function() {
         this.__lastVideosInProgressLength = null;
+      },
+
+      ready: function() {
+        this.__ensureActive();
       },
 
       __videosInProgressChanged: function(length) {
@@ -76,6 +150,32 @@
         }
 
         this.__lastVideosInProgressLength = length;
+      },
+
+      __onRootRouteActiveChanged: function(event) {
+        this.async(function() {
+          if (this.rootRouteActive) {
+            console.log('Root route active..');
+            this.__ensureActive();
+          }
+        });
+      },
+
+      __onMeatScopeError: function() {
+        this.set('route.path', '/error');
+      },
+
+      __ensureActive: function() {
+        this.debounce('ensureActive', function() {
+          this.$.camera.activate().then(function() {
+            if (this.rootRouteActive) {
+              this.set('route.path', '/record');
+            }
+          }.bind(this)).catch(function(error) {
+            console.error(error);
+            this.fire('meat-scope-error', error);
+          }.bind(this));
+        }, 100);
       }
     });
   </script>

@@ -2,10 +2,10 @@
 <link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../../bower_components/iron-icons/av-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/notification-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../bower_components/app-route/app-route.html">
 <link rel="import" href="meat-scope-devices.html">
 <link rel="import" href="meat-scope-record-button.html">
 <dom-module id="meat-scope-controls">
@@ -15,6 +15,7 @@
         position: absolute;
         bottom: 0;
         width: 100%;
+        height: 100%;
         transition: transform 0.15s, opacity 0.15s;
         transform: translate(0);
         opacity: 1;
@@ -33,7 +34,7 @@
       }
 
       paper-fab {
-        margin: 20px 10px;
+        margin: 0px 10px 20px;
       }
 
       paper-icon-button {
@@ -59,6 +60,13 @@
         @apply(--layout-end-justified);
       }
 
+      #features {
+        @apply(--layout-horizontal);
+        flex: 1 1 auto;
+        @apply(--layout-wrap-reverse);
+        @apply(--layout-end-justified);
+      }
+
       #update-indicator {
         display: block;
         position: absolute;
@@ -66,12 +74,18 @@
         width: 16px;
         height: 16px;
         border-radius: 50%;
-        background-color: #F15092;
+        background-color: var(--meat-scope-pink);
         z-index: 2;
         margin: 24px 0 0 42px;
         transform-origin: center center;
         animation: throb 1s cubic-bezier(.17,.67,.83,.67);
         animation-iteration-count: infinite;
+      }
+
+      #about {
+        position: absolute;
+        top: 0;
+        right: 0;
       }
 
       @keyframes throb {
@@ -101,6 +115,10 @@
       }
     </style>
 
+    <a href="/about">
+      <paper-icon-button id="about" icon="help" noink>
+      </paper-icon-button>
+    </a>
 
     <section id="main" hide$=[[showSettings]]>
       <a href="/videos" on-down="__onVideoLinkTap">
@@ -111,29 +129,52 @@
       <meat-scope-record-button
           on-tap="__onRecordTap">
       </meat-scope-record-button>
-      <a href="/settings">
-        <paper-icon-button icon="av:movie">
+      <a href="/record/settings">
+        <paper-icon-button icon="image:movie-filter">
         </paper-icon-button>
       </a>
+
     </section>
     <section id="settings" hide$=[[!showSettings]]>
-      <paper-fab
-          mini
-          icon="image:crop-free"
-          disabled>
-      </paper-fab>
-      <paper-fab
-          mini
-          icon="av:av-timer"
-          disabled>
-      </paper-fab>
-      <paper-fab
-          mini
-          icon="[[__computeCameraIcon(selectedCamera)]]"
-          on-tap="__onSwitchCamerasTap"
-          hidden$="[[!hasMultipleCameras]]">
-      </paper-fab>
-      <a href="/">
+      <div id="features">
+        <paper-fab
+            mini
+            icon="cancel"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="editor:insert-emoticon"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="image:flip"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="image:rotate-right"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="image:crop-free"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="av:av-timer"
+            disabled>
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="[[__computeCameraIcon(selectedCamera)]]"
+            on-tap="__onSwitchCamerasTap"
+            hidden$="[[!hasMultipleCameras]]">
+        </paper-fab>
+      </div>
+      <a href="/record">
         <paper-icon-button icon="close">
         </paper-icon-button>
       </a>

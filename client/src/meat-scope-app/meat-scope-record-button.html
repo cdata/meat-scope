@@ -9,13 +9,14 @@
         cursor: pointer;
         width: 128px;
         height: 128px;
-        background-image: url('/src/images/meat_scope_empty_button_sprite.svg');
-        background-size: 256px 128px;
+        background-image: url('/src/images/meat_scope_sprite_sheet.svg');
+        background-size: var(--meat-scope-sprite-sheet-size);
+        background-repeat: no-repeat;
         -webkit-tap-highlight-color: transparent;
       }
 
       :host([pressed]) {
-        background-position: -128px;
+        background-position: -127px;
       }
     </style>
   </template>

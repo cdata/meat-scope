@@ -3,6 +3,9 @@
   "shell": "src/meat-scope-app/meat-scope-app.html",
   "fragments": [
     "src/meat-scope-app/meat-scope-camera.html",
-    "src/meat-scope-app/meat-scope-videos.html"
+    "src/meat-scope-app/meat-scope-videos.html",
+    "src/meat-scope-app/meat-scope-about.html",
+    "src/meat-scope-app/meat-scope-error.html",
+    "src/meat-scope-app/meat-scope-splash.html"
   ]
 }

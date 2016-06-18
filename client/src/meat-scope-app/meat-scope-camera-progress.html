@@ -1,0 +1,118 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="meat-scope-camera-progress">
+  <template>
+    <style>
+      @keyframes progress {
+        0% {
+          stroke-dashoffset: 360;
+        }
+
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      svg {
+        transform: rotate(-180deg) scale(.8) translateZ(0);
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+      }
+
+      :host([active]) svg {
+        transform: rotate(-90deg) scale(1) translateZ(0);
+        opacity: 1;
+      }
+
+      circle {
+        stroke-dasharray: 360;
+        stroke-dashoffset: 0;
+        fill: transparent;
+        stroke-width: 20px;
+      }
+
+      #base {
+        stroke: var(--meat-scope-blue);
+      }
+
+      #lead {
+        stroke: var(--meat-scope-light-blue);
+        stroke-dashoffset: 240;
+      }
+
+      #progress {
+        stroke: var(--meat-scope-pink);
+        stroke-dashoffset: 360;
+      }
+
+      :host([active]) #progress {
+        animation-name: progress;
+        animation-fill-mode: forwards;
+        animation-timing-function: linear;
+      }
+    </style>
+    <svg id="svg" width="148" height="148" viewPort="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg">
+      <circle
+          id="base"
+          r="57.29577951308232"
+          cx="74"
+          cy="74">
+      </circle>
+
+      <circle
+          id="lead"
+          r="57.29577951308232"
+          cx="74"
+          cy="74">
+      </circle>
+
+      <circle
+          id="progress"
+          r="57.29577951308232"
+          cx="74"
+          cy="74">
+      </circle>
+    </svg>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-camera-progress',
+
+      properties: {
+        leadTime: {
+          type: Number,
+          value: 2000
+        },
+
+        runTime: {
+          type: Number,
+          value: 3000
+        },
+
+        active: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+      },
+
+      observers: [
+        '__updateArcRatios(leadTime, runTime)'
+      ],
+
+      listeners: {
+        'progress.animationend': 'reset'
+      },
+
+      reset: function() {
+        this.active = false;
+      },
+
+      __updateArcRatios(leadTime, runTime) {
+        var totalTime = leadTime + runTime;
+
+        this.$.lead.style.strokeDashoffset = 360 - leadTime / totalTime * 360;
+        this.$.progress.style.animationDuration = totalTime + 'ms';
+      }
+    });
+  </script>
+</dom-module>

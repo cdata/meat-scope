@@ -1,6 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
-<link rel="import" href="../../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/app-pouchdb/app-pouchdb-document.html">
 <link rel="import" href="../../bower_components/app-pouchdb/app-pouchdb-query.html">
 <link rel="import" href="../../bower_components/app-pouchdb/app-pouchdb-index.html">
@@ -37,15 +37,24 @@
         overflow: auto;
       }
 
+      #scrim {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 66%;
+        height: 100%;
+        display: flex;
+        @apply(--layout-center);
+        @apply(--layout-end-justified);
+      }
+
       :host([hide]) #videos {
         transform: translate(-10px, 0);
       }
 
       paper-icon-button {
         color: #fff;
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
+        margin-right: 20px;
       }
 
       meat-scope-video-viewer {
@@ -81,6 +90,13 @@
       </template>
     </section>
 
+    <a href="/record" id="back">
+      <section id="scrim">
+        <paper-icon-button icon="arrow-forward">
+        </paper-icon-button>
+      </section>
+    </a>
+
     <meat-scope-video-details
         id="videoDetails"
         on-video-deleted="__onVideoDeleted"
@@ -88,10 +104,6 @@
         hide="[[!showVideoRouteActive]]">
     </meat-scope-video-details>
 
-    <a href="/" id="back">
-      <paper-icon-button icon="image:camera">
-      </paper-icon-button>
-    </a>
 
     <app-pouchdb-document
         id="newVideoDocument"
