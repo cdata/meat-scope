@@ -1,7 +1,7 @@
 {
   "name": "Meatscope",
   "scope": "./",
-  "start_url": "index.html",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#00A7F7",
