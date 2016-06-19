@@ -12,6 +12,8 @@
         will-change: transform, opacity;
         transition: transform 0.3s, opacity 0.3s;
         transform-origin: center center;
+
+        --spinner-background-x: calc(3 * var(--meat-scope-sprite-interval) + 1px);
       }
 
       :host([disabled]) {
@@ -32,8 +34,8 @@
 
         display: block;
         position: relative;
-        width: 128px;
-        height: 136px;
+        width: 82px;
+        height: 128px;
       }
 
       #spinner:before,
@@ -51,11 +53,12 @@
       }
 
       #spinner:after {
-        background-position: -276px 4px;
+        left: 4px;
+        background-position: calc(2 * var(--meat-scope-sprite-interval)) 0;
       }
 
       #spinner:before {
-        background-position: -402px 4px;
+        background-position: calc(3 * var(--meat-scope-sprite-interval) + 1px) 0;
 
         animation: project 1s;
         animation-iteration-count: infinite;
@@ -64,39 +67,39 @@
 
       @keyframes project {
         0% {
-          background-position: -402px 4px;
+          transform: translate(0, 0);
         }
 
         12.5% {
-          background-position: -400px 3px;
+          transform: translate(3px, 2px);
         }
 
         25% {
-          background-position: -399px 1px;
+          transform: translate(3px, -3px);
         }
 
         37.5% {
-          background-position: -400px -1px;
+          transform: translate(3px, -6px);
         }
 
         50% {
-          background-position: -402px -2px;
+          transform: translate(0px, -6px);
         }
 
         62.5% {
-          background-position: -404px 1px;
+          transform: translate(-3px, -4px);
         }
 
         75% {
-          background-position: -405px 2px;
+          transform: translate(-3px, -2px);
         }
 
         87.5% {
-          background-position: -405px 3px;
+          transform: translate(-2px, 1px);
         }
 
         100% {
-          background-position: -402px 4px;
+          transform: translate(0, 0);
         }
       }
 

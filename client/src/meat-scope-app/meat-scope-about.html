@@ -45,8 +45,9 @@
       #logo {
         display: inline-block;
         position: relative;
-        width: 128px;
-        height: 136px;
+        width: 82px;
+        height: 128px;
+        flex: 0 0 auto;
       }
 
       #logo:before,
@@ -56,23 +57,30 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        right: 0;
+        bottom: 0;
         background-image: url('/src/images/meat_scope_sprite_sheet.svg');
         background-size: var(--meat-scope-sprite-sheet-size);
         background-repeat: no-repeat;
       }
 
       #logo:after {
-        background-position: -276px 4px;
+        left: 4px;
+        background-position: calc(2 * var(--meat-scope-sprite-interval)) 0;
       }
 
       #logo:before {
-        background-position: -402px 4px;
+        background-position: calc(3 * var(--meat-scope-sprite-interval) + 1px) 0;
       }
 
       paper-fab {
         margin: 1em;
+      }
+
+      @media (max-width: 320px) {
+        :host {
+          padding: 0 10px;
+        }
       }
 
     </style>
