@@ -1,10 +1,18 @@
+<link rel="import" href="meat-scope-media-converter/thread-pool.html">
 <script>
 (function() {
   'use strict';
 
+  var threadPool = null;
+
   function MeatScopeMediaClient(workerUrl) {
     this.__workerUrl = workerUrl;
     this.__nextMessageId = 0;
+
+    if (threadPool == null && MeatScopeThreadPool.MAX_THREADS > 0) {
+      threadPool = new MeatScopeThreadPool();
+    }
+
     this.connect();
   }
 
@@ -16,6 +24,16 @@
             worker.port.addEventListener('message', function onMessage(event) {
               if (event.data && event.data.type === 'meat-scope-connected') {
                 worker.port.removeEventListener('message', onMessage);
+
+                if (threadPool && !threadPool.portsTaken) {
+                  // TODO: Also send "client port" so that errors can be
+                  // reported directly to thread pool...
+                  console.log('Announcing thread pool to worker...');
+                  worker.port.postMessage({
+                    type: 'meat-scope-announce-thread-pool'
+                  }, threadPool.takePorts());
+                }
+
                 resolve(worker);
               }
             });

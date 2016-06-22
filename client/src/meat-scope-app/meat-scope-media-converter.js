@@ -1,19 +1,12 @@
 (function(self) {
   'use strict';
 
-  // Whammy automatically tries to add itself to window:
-  if (!self.window) {
-    self.window = self;
-  }
-
-  self.importScripts(['/bower_components/whammy/whammy.js']);
   self.importScripts(['/bower_components/gif.js/dist/libgif.js']);
-  self.importScripts(['/bower_components/libwebpjs/index.js']);
 
-  function MeatScopePixelBufferSlicer(source) {
+  function MeatScopeSlicer(source) {
     this.source = source;
     this.cellsPerPage = source.gridWidth * source.gridHeight;
-    this.lastFrame = new ImageData(source.width, source.height);
+    // this.lastFrame = new ImageData(source.width, source.height);
 
     this.count = 0;
 
@@ -22,10 +15,12 @@
     }
   }
 
-  MeatScopePixelBufferSlicer.prototype = {
+  MeatScopeSlicer.prototype = {
     readFrame: function(index) {
+      console.log('Reading frame', index);
       var pixelBuffer = this.source;
-      var frame = this.lastFrame;
+      // var frame = this.lastFrame;
+      var frame = new ImageData(this.width, this.height);
       var pageIndex = 0|(index / this.cellsPerPage);
       var page = pixelBuffer.pages[pageIndex];
       var cellIndex = index - pageIndex * this.cellsPerPage;
@@ -72,31 +67,17 @@
 
     get frameCount() {
       return this.count;
+    },
+
+    forEach: function(callback, context) {
+      context = context || this;
+
+      for (var index = 0; index < this.frameCount; ++index) {
+        var frame = this.readFrame(index);
+        callback.call(context, frame, index, this);
+      }
     }
-  };
-
-
-  function MeatScopeFrameSetSlicer(source) {
-    this.source = source;
   }
-
-  MeatScopeFrameSetSlicer.prototype = {
-    readFrame: function(index) {
-      return this.source.frames[index];
-    },
-
-    get width() {
-      return this.source.width;
-    },
-
-    get height() {
-      return this.source.height;
-    },
-
-    get frameCount() {
-      return this.source.frames.length;
-    }
-  };
 
 
   function MeatScopeGifEncoder(width, height) {
@@ -128,123 +109,32 @@
         offset += page.length;
       }
 
-      console.log(data.toString());
-
-      // return Promise.resolve({
-      //   data: data,
-      //   type: 'image/gif'
-      // });
       return Promise.resolve({
         blob: new Blob([data], { type: 'image/gif' }),
         type: 'image/gif'
       });
     }
-  }
-
-
-  function MeatScopeWhammyEncoder(width, height) {
-    this.whammy = new self.Whammy.Video(24);
-  }
-
-  MeatScopeWhammyEncoder.prototype = {
-    addFrame: function(frame) {
-      this.whammy.frames.push({
-        image: frame,
-        duration: this.whammy.duration
-      });
-    },
-
-    finish: function() {
-      return new Promise(function(resolve) {
-        this.whammy.compile(null, resolve);
-      }.bind(this));
-    }
   };
 
-
-  function MeatScopeWebmEncoder(width, height) {
-    MeatScopeWhammyEncoder.apply(this, arguments);
-
-    this.width = width;
-    this.height = height;
-    this.encoder = new WebPEncoder();
-
-    this.encoder.WebPEncodeConfig({
-      target_size: 0,
-      target_PSNR: 0.,
-      method: 4, // quality, 0 - 6
-      sns_strength: 50, // spatial noise shaping, 0 - 100
-      filter_strength: 20, // 0 (off) - 100 (strongest)
-      filter_sharpness: 0, // 0 (off) - 7 (least sharp)
-      filter_type: 0, // 0: simple, 1: strong (only if strength > 0 or autofilter > 0)
-      partitions: 1, // log2(number of token partitions) in [0..3]
-      segments: 2, // max segments, 1 - 4
-      pass: 1, // number of entropy-analysis passes, 1 - 10
-      show_compressed: 0, // boolean
-      preprocessing: 1, // preprocessing filter, 0: none, 1: segment-smooth
-      autofilter: 1, // boolean
-      partition_limit: 0, // ???
-      extra_info_type: 0, // print extra_info ???
-      preset: 0 // 0: default, 1: picture, 2: photo, 3: drawing, 4: icon, 5: text
-    });
-  }
-
-  MeatScopeWebmEncoder.prototype =
-      Object.create(MeatScopeWhammyEncoder.prototype);
-
-  MeatScopeWebmEncoder.prototype.addFrame = function(frame) {
-    var dataUrl;
-
-    if (frame instanceof ImageData) {
-      var result = { output: '' };
-      var size = this.encoder.WebPEncodeRGBA(
-          frame.data,
-          this.width,
-          this.height,
-          this.width * 4,
-          50, // quality, 0 - 100
-          result);
-      dataUrl = 'data:image/webp;base64,' + btoa(result.output);
-    } else {
-      dataUrl = frame;
-    }
-
-    MeatScopeWhammyEncoder.prototype.addFrame.call(this, dataUrl);
-  };
-
-
-  var slicerMap = {
-    frameSet: MeatScopeFrameSetSlicer,
-    pixelBuffer: MeatScopePixelBufferSlicer
-  };
-
-  var encoderMap = {
-    gif: MeatScopeGifEncoder,
-    webm: MeatScopeWebmEncoder
-  };
 
   var nextConverterId = 0;
 
   function MeatScopeMediaConverter(input) {
     this.id = nextConverterId++;
-    this.progressHandlers = [];
     this.input = input;
 
-    var Slicer = slicerMap[input.type];
-
-    this.slicer = new Slicer(this.input);
+    this.slicer = new MeatScopeSlicer(this.input);
+    console.log('Media converter created...');
   };
 
   MeatScopeMediaConverter.prototype = {
     to: function(outputType, progressHandler) {
       return new Promise(function(resolve, reject) {
         var slicer = this.slicer;
-        var Encoder = encoderMap[outputType];
-        var encoder = new Encoder(slicer.width, slicer.height);
+        var encoder = new MeatScopeGifEncoder(slicer.width, slicer.height);
         var index = 0;
 
         (function nextFrame() {
-          console.log(index);
           var frame = slicer.readFrame(index++);
           encoder.addFrame(frame);
 
@@ -262,6 +152,67 @@
     }
   }
 
+  function MeatScopeMultithreadedMediaConverter(input, threadAllocator) {
+    this.id = nextConverterId++;
+    this.threadAllocator = threadAllocator;
+    this.slicer = new MeatScopeSlicer(input);
+    console.log('Multithreaded media converter created...');
+  }
+
+  MeatScopeMultithreadedMediaConverter.prototype = {
+    to: function(outputType, progressHandler) {
+      var jobs = [];
+      var completed = 0;
+      var threadAllocator = this.threadAllocator;
+
+      this.slicer.forEach(function(imageData, index, slicer) {
+        jobs.push(threadAllocator.awaitThread().then(function(port) {
+          console.log('Processing frame', index);
+          var result = new Promise(function(resolve, reject) {
+            port.addEventListener('message', function onMessage(event) {
+              if (event.data &&
+                  event.data.type === 'meat-scope-frame-converted' &&
+                  event.data.index === index) {
+                port.removeEventListener('message', onMessage);
+                console.log('Freeing thread used to process frame', index);
+                threadAllocator.freeThread(port);
+
+                completed++;
+
+                if (progressHandler) {
+                  progressHandler(completed, slicer.frameCount);
+                }
+
+                resolve(event.data.data);
+              }
+            });
+          });
+
+          port.postMessage({
+            type: 'meat-scope-convert-frame',
+            frame: {
+              imageData: imageData,
+              width: this.slicer.width,
+              height: this.slicer.height,
+              index: index,
+              total: this.slicer.frameCount
+            }
+          });
+
+          return result;
+        }.bind(this)));
+      }, this);
+
+      return Promise.all(jobs).then(function(parts) {
+        return {
+          blob: new Blob(parts, { type: 'image/gif' }),
+          type: 'image/gif'
+        };
+      }.bind(this));
+    }
+  };
+
   self.MeatScopeMediaConverter = MeatScopeMediaConverter;
+  self.MeatScopeMultithreadedMediaConverter = MeatScopeMultithreadedMediaConverter;
 
 })(typeof self !== 'undefined' ? self : this);

@@ -7,17 +7,5 @@ module.exports = {
     '/bower_components/webrtc-polyfill/index.js',
     '/src/images/*'
   ],
-  navigateFallback: '/index.html',
-  runtimeCaching: [
-    {
-      urlPattern: /\/src\/images\/.*/,
-      handler: 'cacheFirst',
-      options: {
-        cache: {
-          maxEntries: 200,
-          name: 'images-cache'
-        }
-      }
-    }
-  ]
+  navigateFallback: '/index.html'
 };

@@ -1,12 +1,15 @@
 self.importScripts(['/src/meat-scope-app/meat-scope-media-converter.js']);
+self.importScripts(['/src/meat-scope-app/meat-scope-media-converter/thread-allocator.js']);
 
 function MeatScopeMediaWorker() {
   this.jobQueue = Promise.resolve();
   this.conversionObservers = [];
+  this.threadAllocator = null;
 }
 
 MeatScopeMediaWorker.prototype = {
   registerClient: function(port) {
+    console.log('Media Worker client connected...');
     port.addEventListener('message', this.onClientMessage.bind(this, port));
     port.start();
     port.postMessage({
@@ -36,6 +39,9 @@ MeatScopeMediaWorker.prototype = {
     }
 
     switch (data.type) {
+      case 'meat-scope-announce-thread-pool':
+        this.threadAllocator = new MeatScopeThreadAllocator(event.ports);
+        break;
       case 'meat-scope-observe-conversions':
         this.conversionObservers.push(port);
         break;
@@ -46,7 +52,10 @@ MeatScopeMediaWorker.prototype = {
         }
         break;
       case 'meat-scope-convert-to-video':
-        var converter = new MeatScopeMediaConverter(data.input);
+        var converter = this.threadAllocator ?
+            new MeatScopeMultithreadedMediaConverter(
+                data.input, this.threadAllocator) :
+            new MeatScopeMediaConverter(data.input);
 
         this.notifyConversionObservers({
           type: 'meat-scope-conversion-enqueued',
@@ -87,7 +96,9 @@ MeatScopeMediaWorker.prototype = {
   }
 };
 
+
 self.meatScopeMediaWorker = new MeatScopeMediaWorker();
+console.log('Media Worker created...');
 
 self.addEventListener('connect', function(event) {
   self.meatScopeMediaWorker.registerClient(event.ports[0]);

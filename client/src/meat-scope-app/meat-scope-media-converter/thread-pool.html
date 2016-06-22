@@ -1,0 +1,72 @@
+<script>
+  (function() {
+    'use strict';
+
+    function MeatScopeThreadPool(size) {
+      this.size = size || MeatScopeThreadPool.MAX_THREADS;
+      this.threads = [];
+      this.channel = new MessageChannel();
+      this.portsTaken = false;
+
+      for (var i = 0; i < this.size; ++i) {
+        var channel = new MessageChannel();
+        var worker = new Worker(
+            '/src/meat-scope-app/meat-scope-media-converter/thread.js');
+
+        this.threads.push({
+          port: channel.port1,
+          worker: worker
+        });
+
+        worker.postMessage({
+          type: 'meat-scope-connect'
+        }, [channel.port2]);
+
+        worker.addEventListener('error', this.onWorkerError.bind(this))
+        channel.port1.start();
+      }
+
+      console.log('Thread pool created (with ' + this.size + ' threads)...');
+    }
+
+    // Max threads = cpus - 2, to account for main thread and shared worker
+    MeatScopeThreadPool.MAX_THREADS = navigator.hardwareConcurrency ?
+        Math.max(navigator.hardwareConcurrency - 2, 0) : 0;
+
+    MeatScopeThreadPool.prototype = {
+      dispose: function() {
+        this.threads.forEach(function(thread) {
+          thread.worker.stop();
+        });
+      },
+
+      get port() {
+        return this.channel.port1;
+      },
+
+      get clientPort() {
+        return this.channel.port2;
+      },
+
+      takePorts: function() {
+        if (this.portsTaken) {
+          console.error('Cannot take ports more than once!');
+          return;
+        }
+
+        this.portsTaken = true;
+
+        return this.threads.map(function(thread) {
+          return thread.port;
+        });
+      },
+
+      onWorkerError: function(error) {
+        console.error(error);
+      }
+    };
+
+    window.MeatScopeThreadPool =
+        MeatScopeThreadPool;
+  })();
+</script>
