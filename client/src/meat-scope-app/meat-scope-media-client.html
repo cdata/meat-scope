@@ -62,11 +62,11 @@
       }.bind(this));
     },
 
-    convertTo: function(input, outputType) {
+    convert: function(input, settings) {
       return this.post({
         type: 'meat-scope-convert-to-video',
         input: input,
-        outputType: outputType
+        settings: settings
       }).then(function(data) {
         return data.blob;
       });

@@ -3,23 +3,34 @@
 
   self.importScripts(['/bower_components/gif.js/dist/libgif.js']);
 
-  function MeatScopeSlicer(source) {
+  function MeatScopeSlicer(source, settings) {
     this.source = source;
+    this.settings = settings;
     this.cellsPerPage = source.gridWidth * source.gridHeight;
-    // this.lastFrame = new ImageData(source.width, source.height);
 
-    this.count = 0;
+    this.sourceFrameCount = 0;
 
     for (var i = 0; i < this.source.pages.length; ++i) {
-      this.count += this.source.pages[i].cells;
+      this.sourceFrameCount += this.source.pages[i].cells;
+    }
+
+    this.totalFrameCount = this.sourceFrameCount;
+
+    if (this.settings.rewind) {
+      this.totalFrameCount *= 2;
     }
   }
 
   MeatScopeSlicer.prototype = {
     readFrame: function(index) {
-      console.log('Reading frame', index);
+      index = index % this.totalFrameCount;
+
+      if (!(index < this.sourceFrameCount)) {
+        index = this.sourceFrameCount - (index - (this.sourceFrameCount - 1));
+      }
+
       var pixelBuffer = this.source;
-      // var frame = this.lastFrame;
+      // TODO: Investigate caching these to avoid memory churn:
       var frame = new ImageData(this.width, this.height);
       var pageIndex = 0|(index / this.cellsPerPage);
       var page = pixelBuffer.pages[pageIndex];
@@ -66,7 +77,7 @@
     },
 
     get frameCount() {
-      return this.count;
+      return this.totalFrameCount;
     },
 
     forEach: function(callback, context) {
@@ -119,11 +130,12 @@
 
   var nextConverterId = 0;
 
-  function MeatScopeMediaConverter(input) {
+  function MeatScopeMediaConverter(input, settings) {
     this.id = nextConverterId++;
     this.input = input;
+    this.settings = settings;
 
-    this.slicer = new MeatScopeSlicer(this.input);
+    this.slicer = new MeatScopeSlicer(this.input, this.settings);
     console.log('Media converter created...');
   };
 
@@ -152,10 +164,10 @@
     }
   }
 
-  function MeatScopeMultithreadedMediaConverter(input, threadAllocator) {
+  function MeatScopeMultithreadedMediaConverter(input, settings, threadAllocator) {
     this.id = nextConverterId++;
     this.threadAllocator = threadAllocator;
-    this.slicer = new MeatScopeSlicer(input);
+    this.slicer = new MeatScopeSlicer(input, settings);
     console.log('Multithreaded media converter created...');
   }
 

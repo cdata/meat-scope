@@ -54,8 +54,8 @@ MeatScopeMediaWorker.prototype = {
       case 'meat-scope-convert-to-video':
         var converter = this.threadAllocator ?
             new MeatScopeMultithreadedMediaConverter(
-                data.input, this.threadAllocator) :
-            new MeatScopeMediaConverter(data.input);
+                data.input, data.settings, this.threadAllocator) :
+            new MeatScopeMediaConverter(data.input, data.settings);
 
         this.notifyConversionObservers({
           type: 'meat-scope-conversion-enqueued',

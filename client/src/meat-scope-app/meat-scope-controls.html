@@ -37,6 +37,11 @@
         margin: 0px 10px 20px;
       }
 
+      paper-fab[active] {
+        background-color: var(--meat-scope-pink);
+        color: var(--meat-scope-light-pink);
+      }
+
       paper-icon-button {
         color: #fff;
         margin: 20px;
@@ -137,7 +142,7 @@
     </section>
     <section id="settings" hide$=[[!showSettings]]>
       <div id="features">
-        <paper-fab
+        <!-- <paper-fab
             mini
             icon="cancel"
             disabled>
@@ -147,16 +152,7 @@
             icon="editor:insert-emoticon"
             disabled>
         </paper-fab>
-        <paper-fab
-            mini
-            icon="image:flip"
-            disabled>
-        </paper-fab>
-        <paper-fab
-            mini
-            icon="image:rotate-right"
-            disabled>
-        </paper-fab>
+
         <paper-fab
             mini
             icon="image:crop-free"
@@ -166,6 +162,24 @@
             mini
             icon="av:av-timer"
             disabled>
+        </paper-fab> -->
+        <paper-fab
+            mini
+            icon="av:repeat"
+            toggles
+            active="{{settings.rewind}}">
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="image:flip"
+            toggles
+            active="{{!settings.mirror}}">
+        </paper-fab>
+        <paper-fab
+            mini
+            icon="image:rotate-right"
+            toggles
+            active="{{settings.flip}}">
         </paper-fab>
         <paper-fab
             mini
@@ -208,6 +222,16 @@
         hasMultipleCameras: {
           type: Boolean,
           value: false
+        },
+
+        settings: {
+          type: Object,
+          notify: true,
+          value: function() {
+            return {
+              mirror: true
+            };
+          }
         }
       },
 

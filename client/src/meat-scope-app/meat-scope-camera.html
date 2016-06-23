@@ -40,9 +40,21 @@
         color: #fff;
       }
 
-      meat-scope-video.user {
+      meat-scope-video.flip,
+      meat-scope-video.mirror {
         backface-visibility: visible;
+      }
+
+      meat-scope-video.mirror {
         transform: scale(-1, 1);
+      }
+
+      meat-scope-video.flip {
+        transform: scale(-1, -1);
+      }
+
+      meat-scope-video.flip.mirror {
+        transform: scale(1, -1);
       }
 
       #placeholder {
@@ -69,7 +81,7 @@
     </meat-scope-user-media>
     <meat-scope-video
         id="video"
-        class$="[[__deviceClassName(selectedCamera)]]"
+        class$="[[__videoClassName(selectedCamera, settings.*)]]"
         stream="[[stream]]"
         clamp="[[clamp]]">
     </meat-scope-video>
@@ -86,7 +98,8 @@
         on-switch-cameras="__onSwitchCameras"
         on-record="record"
         show-settings="[[settingsRouteActive]]"
-        hide="[[__or(recording, disabled)]]">
+        hide="[[__or(recording, disabled)]]"
+        settings="{{settings}}">
     </meat-scope-controls>
   </template>
   <script>
@@ -148,6 +161,11 @@
         previewUrl: {
           type: String,
           value: null
+        },
+
+        settings: {
+          type: Object,
+          notify: true
         }
       },
 
@@ -188,10 +206,20 @@
       },
 
       record: function() {
+        var usingEnvironmentCamera = this.__usingEnvironmentCamera;
+        var transform = new MeatScopeTransform();
+
+        if ((usingEnvironmentCamera && !this.settings.mirror) ||
+            (!usingEnvironmentCamera && this.settings.mirror)) {
+          transform.mirror();
+        }
+
+        if (this.settings.flip) {
+          transform.flip();
+        }
+
         var filmStrip = new MeatScopeFilmStrip(
-            this.$.video, this.clamp,
-            /environment|rear|back/i.test(this.selectedCamera.label) ?
-                'none' : 'mirror');
+            this.$.video, this.clamp, transform)
 
         return new Promise(function(resolve, reject) {
           var frames = [];
@@ -214,7 +242,8 @@
             } else if (currentTime >= totalTime) {
               window.requestAnimationFrame(function() {
                 self._setRecording(false);
-                resolve(self.client.convertTo(filmStrip.develop(), 'gif'));
+                resolve(self.client.convert(
+                    filmStrip.develop(), self.settings));
 
                 // Performance measurement:
                 filmStrip.analyze();
@@ -225,6 +254,10 @@
             window.setTimeout(frame, 0);
           })();
         }.bind(this));
+      },
+
+      get __usingEnvironmentCamera() {
+        return /environment|rear|back/i.test(this.selectedCamera.label);
       },
 
       __now: function() {
@@ -240,9 +273,20 @@
         return false;
       },
 
-      __deviceClassName: function(device) {
-        return /environment|rear|back/i.test(device.label) ?
-            'environment' : 'user';
+      __videoClassName: function(selectedCamera) {
+        var facingEnvironment = this.__usingEnvironmentCamera;
+        var mirror = this.settings.mirror;
+        var classes = [];
+
+        if ((facingEnvironment && !mirror) || (!facingEnvironment && mirror)) {
+          classes.push('mirror');
+        }
+
+        if (this.settings.flip) {
+          classes.push('flip');
+        }
+
+        return classes.join(' ');
       },
 
       __onSwitchCameras: function() {

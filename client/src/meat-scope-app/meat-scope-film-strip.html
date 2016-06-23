@@ -10,14 +10,13 @@
         this.cells = this.gridWidth * this.gridHeight;
         this.width = 0;
         this.height = 0;
-        this.xScale = 1;
-        this.yScale = 1;
         this.currentIndex = 0;
         this.contexts = [];
+        this.transform = null;
 
         for (var i = 0; i < 3; ++i) {
           this.contexts.push(document.createElement('canvas').getContext('2d'));
-          // document.body.appendChild(this.contexts[i].canvas);
+          document.body.appendChild(this.contexts[i].canvas);
         }
       }
 
@@ -29,7 +28,9 @@
             var context = canvas.getContext('2d');
             canvas.width = this.width * this.gridWidth;
             canvas.height = this.height * this.gridHeight;
-            context.scale(this.xScale, this.yScale);
+            if (this.transform) {
+              this.transform.applyToContext(context);
+            }
             this.contexts.push(context);
           }
           return this.contexts[contextIndex];
@@ -50,7 +51,7 @@
             pages: []
           };
 
-          this.setScale(1, 1);
+          this.resetTransform();
 
           for (var i = 1; i < this.contexts.length; ++i) {
             if (i > lastContextIndex) {
@@ -83,15 +84,19 @@
           }
         },
 
-        setScale: function(xScale, yScale) {
-          this.xScale = xScale;
-          this.yScale = yScale;
+        applyTransform: function(transform) {
+          for (var i = 1; i < this.contexts.length; ++i) {
+            transform.applyToContext(this.contexts[i]);
+          }
+
+          this.transform = transform;
+        },
+
+        resetTransform: function() {
+          this.transform = null;
 
           for (var i = 1; i < this.contexts.length; ++i) {
-            var context = this.contexts[i];
-
-            context.resetTransform();
-            context.scale(this.xScale, this.yScale);
+            this.contexts[i].resetTransform();
           }
         },
 
@@ -100,8 +105,8 @@
           var i = nextIndex % this.cells;
           var y = 0|(i / this.gridWidth);
           var x = i % this.gridWidth;
-          var tw = this.width * this.xScale;
-          var th = this.height * this.yScale;
+          var tw = this.width * this.transform.scaleX;
+          var th = this.height * this.transform.scaleY;
 
           this.currentContext.drawImage(
               image,
@@ -139,8 +144,9 @@
         this.clampedHeight = 0|this.clampedHeight;
 
         this.pixelBuffer.setSize(this.clampedWidth, this.clampedHeight);
-        if (this.transform === 'mirror') {
-          this.pixelBuffer.setScale(-1, 1);
+
+        if (this.transform) {
+          this.pixelBuffer.applyTransform(this.transform);
         }
       }
 
@@ -180,6 +186,45 @@
         }
       };
 
+
+      function MeatScopeTransform() {
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.translateX = 0;
+        this.translateY = 0;
+        this.rotation = 0;
+        this.radianRatio = Math.PI / 180;
+      }
+
+      MeatScopeTransform.prototype = {
+        mirror: function() {
+          this.scaleX *= -1;
+        },
+
+        flip: function() {
+          this.scaleX *= -1;
+          this.scaleY *= -1;
+        },
+
+        rotateRight: function() {
+          this.rotation += 90;
+        },
+
+        rotateLeft: function() {
+          this.rotation -= 90;
+        },
+
+        applyToContext: function(context) {
+          context.resetTransform();
+          window.transform = this;
+          context.scale(this.scaleX, this.scaleY);
+          context.rotate(this.rotation * this.radianRatio);
+          context.translate(context.canvas.width * this.translateX,
+              context.canvas.height * this.translateY);
+        }
+      };
+
+      window.MeatScopeTransform = MeatScopeTransform;
       window.MeatScopeFilmStrip = MeatScopeFilmStrip;
     })();
   </script>
