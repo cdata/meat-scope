@@ -89,7 +89,13 @@
         }
       }
 
-      @media (orientation: landscape) {
+      @media (orientation: landscape) and (max-height: 540px) {
+        #logo {
+          display: none;
+        }
+      }
+
+      @media (orientation: landscape) and (max-height: 420px) {
         #logo {
           display: none;
         }
