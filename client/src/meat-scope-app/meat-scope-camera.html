@@ -294,6 +294,10 @@
       },
 
       __onVideosUpdated: function() {
+        if (this.disabled) {
+          return;
+        }
+
         this.$.controls.showUpdateIndicator = true;
       },
 
