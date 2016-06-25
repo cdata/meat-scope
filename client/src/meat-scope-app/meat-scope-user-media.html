@@ -61,7 +61,18 @@
 
         activate: function() {
           this.active = true;
-          return this.__requestingUserMedia;
+          return this.__requestingUserMedia ?
+            this.__requestingUserMedia :
+            new Promise(function(resolve) {
+              var self = this;
+              this.addEventListener('stream-changed', function onStreamChanged() {
+                if (self.stream) {
+                  this.removeEventListener('stream-changed', onStreamChanged);
+                  resolve();
+                }
+              });
+            }.bind(this));
+          // return this.__requestingUserMedia;
         },
 
         getUserMedia: function() {

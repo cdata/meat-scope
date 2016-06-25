@@ -1,0 +1,219 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="meat-scope-media-client.html">
+<link rel="import" href="meat-scope-film-strip.html">
+<dom-module id="meat-scope-face-decorator">
+  <template>
+    <style>
+      img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        transform-origin: 0 0;
+        transition: transform 0.5s linear;
+      }
+    </style>
+    <content id="videoContent" select="meat-scope-video"></content>
+  </template>
+  <script>
+    Polymer({
+      is: 'meat-scope-face-decorator',
+
+      properties: {
+        client: {
+          type: MeatScopeMediaClient,
+          value: function() {
+            return new MeatScopeMediaClient(
+                this.resolveUrl('meat-scope-media-worker.js'));
+          }
+        },
+
+        decorations: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+
+        transform: {
+          type: MeatScopeTransform
+        },
+
+        faces: {
+          type: Array,
+          observer: '__facesChanged',
+          value: function() {
+            return [];
+          }
+        },
+
+        url: {
+          type: String,
+          value: '/src/images/meat_scope_deal_with_it.svg'
+        },
+
+        offsetScaleX: {
+          type: Number,
+          value: 0
+        },
+
+        offsetScaleY: {
+          type: Number,
+          value: 0
+        },
+
+        offsetScaleArea: {
+          type: Number,
+          value: 1
+        },
+
+        video: {
+          type: HTMLElement
+        }
+      },
+
+      attached: function() {
+        Polymer.dom(this.$.videoContent).observeNodes(function(nodes) {
+          if (nodes.addedNodes.length) {
+            this.video = nodes.addedNodes[0];
+          }
+        }.bind(this));
+      },
+
+      snapshot: function() {
+        var snapshot = [];
+        for (var i = 0; i < this.decorations.length; ++i) {
+          var decoration = this.decorations[i];
+          if (!decoration.loaded) {
+            continue;
+          }
+          snapshot.push({
+            x: decoration.x,
+            y: decoration.y,
+            scale: decoration.scale
+          });
+        }
+        return snapshot;
+      },
+
+      detectFaces: function() {
+        window.requestAnimationFrame(function() {
+          this.__detectFaces().then(function(faces) {
+            if (faces.length) {
+              this.faces = faces;
+            }
+
+            this.detectFaces();
+          }.bind(this));
+        }.bind(this));
+      },
+
+      __detectFaces: function() {
+        if (!this.video) {
+          return;
+        }
+
+        var captureRect = new MeatScopeCaptureRect(this.video, 42);
+        var imageData = MeatScopeFilmStrip.preview(
+            this.video, captureRect, this.transform);
+
+        return this.client.detectFaces(imageData).then(function(faces) {
+          for (var i = 0; i < faces.length; ++i) {
+            faces[i] = {
+              x: faces[i][0] * captureRect.upscale,
+              y: faces[i][1] * captureRect.upscale,
+              width: faces[i][2] * captureRect.upscale,
+              height: faces[i][3] * captureRect.upscale
+            };
+          }
+
+          return faces;
+        });
+      },
+
+      __facesChanged: function() {
+        var decorations = this.decorations.slice();
+
+        this.faces.forEach(function(face, index) {
+          var decoration;
+          var image;
+
+          if (!decorations.length) {
+            image = document.createElement('img');
+            decoration = {
+              image: image,
+              face: face,
+              updated: performance.now(),
+              loaded: false,
+              x: 0,
+              y: 0,
+              scale: 1
+            };
+
+            image.addEventListener('load', function onLoad() {
+              image.removeEventListener('load', onLoad);
+              decoration.loaded = true;
+            });
+            image.src = this.url;
+            Polymer.dom(this.root).appendChild(image);
+            this.decorations.push(decoration);
+            return;
+          }
+
+          var closestDecoration;
+          var closestMagnitude;
+          var closestIndex;
+
+          for (var i = 0; i < decorations.length; ++i) {
+            var decoration = decorations[i];
+            var dx = decoration.face.x - face.x;
+            var dy = decoration.face.y - face.y;
+            var magnitude = Math.sqrt(dx * dx + dy * dy);
+
+            if (magnitude < 128 &&
+                (!closestMagnitude || magnitude < closestMagnitude)) {
+              closestMagnitude = magnitude;
+              closestDecoration = decoration;
+              closestIndex = i;
+            }
+          }
+
+          if (!closestDecoration) {
+            return;
+          }
+
+          decorations.splice(closestIndex, 1);
+
+          closestDecoration.updated = performance.now();
+          closestDecoration.face = face;
+
+          if (!closestDecoration.loaded) {
+            return;
+          }
+
+          image = closestDecoration.image;
+
+          var scale = (face.width * this.offsetScaleArea) / image.width
+          var x = face.x + this.offsetScaleX * face.width;
+          var y = face.y + this.offsetScaleY * face.height;
+
+          closestDecoration.x = x;
+          closestDecoration.y = y;
+          closestDecoration.scale = scale;
+
+          image.style.transform =
+              'translate(' + x + 'px, ' + y + 'px) scale(' + scale + ')';
+        }, this);
+
+        var now = performance.now();
+
+        decorations.forEach(function(decoration) {
+          if (now - decoration.updated > 1000) {
+            Polymer.dom(this.root).removeChild(decoration.image);
+            this.decorations.splice(this.decorations.indexOf(decoration), 1);
+          }
+        }, this);
+      }
+    });
+  </script>
+</dom-module>

@@ -5,7 +5,6 @@
   "dependencies": {
     "polymer": "Polymer/polymer#^1.4.0",
     "iron-resizable-behavior": "polymerelements/iron-resizable-behavior#^1.0.0",
-    "whammy": "antimatter15/whammy",
     "app-storage": "polymerelements/app-storage#~0.9.4",
     "paper-fab": "polymerelements/paper-fab#^1.0.0",
     "iron-icons": "polymerelements/iron-icons#^1.0.0",
@@ -13,17 +12,11 @@
     "paper-icon-button": "polymerelements/paper-icon-button#^1.0.0",
     "app-route": "polymerelements/app-route#^0.9.0",
     "webrtc-polyfill": "https://webrtc.github.io/adapter/adapter-latest.js",
-    "libwebpjs": "http://libwebpjs.appspot.com/v0.1.3/js/libwebp-0.1.3.min.js",
     "gif.js": "cdata/gif.js#^0.1.7",
     "app-pouchdb": "polymerelements/app-pouchdb#support-attachments",
     "web-animations-js": "web-animations/web-animations-js#^2.2.0",
     "clipboard": "zenorocha/clipboard.js#^1.5.12",
-    "platinum-sw": "polymerelements/platinum-sw#^1.0.0"
-  },
-  "devDependencies": {
-    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
-    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
-    "web-component-tester": "^4.0.0",
+    "js-objectdetect": "mtschirs/js-objectdetect#^1.0.0",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0"
   }
 }
