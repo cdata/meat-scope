@@ -62,10 +62,11 @@
       }.bind(this));
     },
 
-    detectFaces: function(input) {
+    detectFaces: function(input, upscale) {
       return this.post({
         type: 'meat-scope-detect-faces',
-        input: input
+        input: input,
+        upscale: upscale
       }).then(function(data) {
         return data.faces;
       });

@@ -28,10 +28,12 @@
           objectdetect.compileClassifier(classifier, scaledWidth);
       scale *= scaleFactor;
     }
+
+    this.previousRectsList = [];
   }
 
   MeatScopeFaceDetector.prototype = {
-    detect: function(imageData, group, stepSize, roi, canny) {
+    detect: function(imageData, upscale, group, stepSize, roi, canny) {
       if (stepSize === undefined) {
         stepSize = 1;
       }
@@ -97,12 +99,81 @@
 
         scale *= this.scaleFactor;
       }
+      //
+      // rects = (group ?
+      //     objectdetect.groupRectangles(rects, group) : rects).sort(
+      //         function(r1, r2) {
+      //           return r2[4] - r1[4];
+      //         });
+      rects = objectdetect.groupRectangles(rects, group);
 
-      return (group ?
-          objectdetect.groupRectangles(rects, group) : rects).sort(
-              function(r1, r2) {
-                return r2[4] - r1[4];
+      rects = rects.map(function(rect) {
+        return {
+          x: rect[0] * upscale,
+          y: rect[1] * upscale,
+          width: rect[2] * upscale,
+          height: rect[3] * upscale
+        };
+      }).filter(function(rect) {
+        return Number.isFinite(rect.x + rect.y + rect.width + rect.height);
+      });
+
+      var previousRectsList = this.previousRectsList.map(
+          function(previousRects) {
+            return previousRects.filter(function(previousRect) {
+              return !!previousRect;
+            });
+          });
+
+      rects = rects.map(function(rect) {
+        var closestPreviousRects =
+            previousRectsList.map(function(previousRects) {
+              var closestMagnitude;
+              var closestIndex;
+
+              previousRects.forEach(function(previousRect, index) {
+                var dx = rect.x - previousRect.x;
+                var dy = rect.y - previousRect.y;
+                var magnitude = Math.sqrt(dx * dx + dy * dy);
+
+                if (magnitude < 128 &&
+                    (closestMagnitude == null || magnitude < closestMagnitude)) {
+                  closestMagnitude = magnitude;
+                  closestIndex = index;
+                }
               });
+
+              if (closestIndex != null) {
+                return previousRects.splice(closestIndex, 1).pop();
+              }
+            }).filter(function(rect) {
+              return !!rect;
+            });
+
+        rect.count = closestPreviousRects.length + 1;
+
+        return closestPreviousRects.reduce(function(rect, nextRect) {
+          // rect.x += nextRect.x;
+          // rect.y += nextRect.y;
+          rect.width += nextRect.width;
+          rect.height += nextRect.height;
+
+          // rect.x /= 2;
+          // rect.y /= 2;
+          rect.width /= 2;
+          rect.height /= 2;
+
+          return rect;
+        }, rect);
+      });
+
+      this.previousRectsList.unshift(rects);
+
+      if (this.previousRectsList.length > 2) {
+        this.previousRectsList.pop();
+      }
+
+      return rects;
     }
   };
 

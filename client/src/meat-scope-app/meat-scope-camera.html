@@ -62,17 +62,6 @@
         width: 100%;
         height: 100%;
       }
-
-      #deal-with-it {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 2;
-        transform-origin: 0 0;
-        transform: translateY(-47px);
-        transition: transform 0.2s linear;
-        width: 300px;
-      }
     </style>
 
     <app-route
@@ -327,11 +316,11 @@
 
         if ((usingEnvironmentCamera && !this.settings.mirror) ||
             (!usingEnvironmentCamera && this.settings.mirror)) {
-          transform.mirror();
+          transform = transform.mirror();
         }
 
         if (this.settings.flip) {
-          transform.flip();
+          transform = transform.flip();
         }
 
         return transform;

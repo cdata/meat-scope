@@ -10,7 +10,7 @@
         left: 0;
         z-index: 2;
         transform-origin: 0 0;
-        transition: transform 0.5s linear;
+        will-change: transform;
       }
     </style>
     <content id="videoContent" select="meat-scope-video"></content>
@@ -113,19 +113,19 @@
           return;
         }
 
-        var captureRect = new MeatScopeCaptureRect(this.video, 42);
+        var captureRect = new MeatScopeCaptureRect(this.video, 100);
         var imageData = MeatScopeFilmStrip.preview(
             this.video, captureRect, this.transform);
 
-        return this.client.detectFaces(imageData).then(function(faces) {
-          for (var i = 0; i < faces.length; ++i) {
-            faces[i] = {
-              x: faces[i][0] * captureRect.upscale,
-              y: faces[i][1] * captureRect.upscale,
-              width: faces[i][2] * captureRect.upscale,
-              height: faces[i][3] * captureRect.upscale
-            };
-          }
+        return this.client.detectFaces(imageData, captureRect.upscale).then(function(faces) {
+          // for (var i = 0; i < faces.length; ++i) {
+          //   faces[i] = {
+          //     x: faces[i][0] * captureRect.upscale,
+          //     y: faces[i][1] * captureRect.upscale,
+          //     width: faces[i][2] * captureRect.upscale,
+          //     height: faces[i][3] * captureRect.upscale
+          //   };
+          // }
 
           return faces;
         });

@@ -50,7 +50,7 @@ MeatScopeMediaWorker.prototype = {
 
         port.postMessage({
           type: 'meat-scope-detected-faces',
-          faces: this.faceDetector.detect(data.input),
+          faces: this.faceDetector.detect(data.input, data.upscale),
           id: data.id
         });
         break;

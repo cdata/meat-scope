@@ -12,10 +12,10 @@
 
       ImagePreview.prototype = {
         from: function(image, captureRect, transform) {
-          this.context.canvas.width = captureRect.clampedWidth;
-          this.context.canvas.height = captureRect.clampedHeight;
 
           if (this.transform !== transform) {
+            this.context.canvas.width = captureRect.clampedWidth;
+            this.context.canvas.height = captureRect.clampedHeight;
             transform.applyToContext(this.context);
             this.transform = transform;
           }
@@ -266,10 +266,8 @@
       }
 
       MeatScopeTransform.clone = function(other) {
-        var transform = new MeatScopeTransform();
-        Object.assign(transform, other);
-        return transform;
-      }
+        return Object.assign(new MeatScopeTransform(), other);
+      };
 
       MeatScopeTransform.prototype = {
         mirror: function() {
