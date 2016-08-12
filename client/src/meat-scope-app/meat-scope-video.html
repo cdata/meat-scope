@@ -44,6 +44,38 @@
 
           transform: {
             type: String
+          },
+
+          viewportWidth: {
+            type: Number,
+            readOnly: true,
+            notify: true,
+            value: 0
+          },
+
+          viewportHeight: {
+            type: Number,
+            readOnly: true,
+            notify: true,
+            value: 0
+          },
+
+          x: {
+            type: Number,
+            readOnly: true,
+            value: 0
+          },
+
+          y: {
+            type: Number,
+            readOnly: true,
+            value: 0
+          },
+
+          scale: {
+            type: Number,
+            readOnly: true,
+            value: 1
           }
         },
 
@@ -52,35 +84,8 @@
           'video.loadedmetadata': '__updateVideoMetrics'
         },
 
-        created: function() {
-          this.__selfRect = {};
-          this.__videoScale = 1;
-          this.__videoTop = 0;
-          this.__videoLeft = 0;
-        },
-
         attached: function() {
           this.__updateVideoMetrics();
-        },
-
-        get viewportWidth() {
-          return this.__selfRect.width;
-        },
-
-        get viewportHeight() {
-          return this.__selfRect.height;
-        },
-
-        get x() {
-          return this.__videoLeft;
-        },
-
-        get y() {
-          return this.__videoTop;
-        },
-
-        get scale() {
-          return this.__videoScale;
         },
 
         __streamChanged: function(stream) {
@@ -117,11 +122,12 @@
           var videoTop = selfRect.height / 2 - (videoHeight / 2 * videoScale);
           var videoLeft = selfRect.width / 2 - (videoWidth / 2 * videoScale);
 
-          this.__videoTop = videoTop;
-          this.__videoLeft = videoLeft;
-          this.__videoScale = videoScale;
+          this._setViewportWidth(selfRect.width);
+          this._setViewportHeight(selfRect.height);
+          this._setX(videoLeft);
+          this._setY(videoTop);
+          this._setScale(videoScale);
 
-          this.__selfRect = selfRect;
           this.$.video.style.transform =
               'translate(' + videoLeft + 'px, ' + videoTop + 'px) ' +
               'scale(' + videoScale + ')';

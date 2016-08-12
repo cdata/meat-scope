@@ -1,10 +1,11 @@
 self.importScripts(['/src/meat-scope-app/meat-scope-media-converter.js']);
-self.importScripts(['/src/meat-scope-app/meat-scope-media-converter/thread-allocator.js']);
+self.importScripts(['/src/meat-scope-app/meat-scope-face-detector.js']);
 
 function MeatScopeMediaWorker() {
   this.jobQueue = Promise.resolve();
   this.conversionObservers = [];
   this.threadAllocator = null;
+  this.faceDetector = null;
 }
 
 MeatScopeMediaWorker.prototype = {
@@ -39,6 +40,20 @@ MeatScopeMediaWorker.prototype = {
     }
 
     switch (data.type) {
+      case 'meat-scope-detect-faces':
+        if (!this.faceDetector ||
+            this.faceDetector.width !== data.input.width ||
+            this.faceDetector.height !== data.input.height) {
+          this.faceDetector = new MeatScopeFaceDetector(
+              data.input.width, data.input.height, 1.1);
+        }
+
+        port.postMessage({
+          type: 'meat-scope-detected-faces',
+          faces: this.faceDetector.detect(data.input, data.upscale),
+          id: data.id
+        });
+        break;
       case 'meat-scope-announce-thread-pool':
         this.threadAllocator = new MeatScopeThreadAllocator(event.ports);
         break;

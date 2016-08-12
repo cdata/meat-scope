@@ -4,6 +4,37 @@
     (function() {
       'use strict';
 
+      function ImagePreview() {
+        this.context = document.createElement('canvas').getContext('2d');
+        this.transform = null;
+        document.body.appendChild(this.context.canvas);
+      }
+
+      ImagePreview.prototype = {
+        from: function(image, captureRect, transform) {
+
+          if (this.transform !== transform) {
+            this.context.canvas.width = captureRect.clampedWidth;
+            this.context.canvas.height = captureRect.clampedHeight;
+            transform.applyToContext(this.context);
+            this.transform = transform;
+          }
+
+          var tw = captureRect.clampedWidth * transform.scaleX;
+          var th = captureRect.clampedHeight * transform.scaleY;
+
+          this.context.drawImage(
+              image,
+              captureRect.x, captureRect.y,
+              captureRect.width, captureRect.height,
+              0, 0, tw, th);
+
+          return this.context.getImageData(
+              0, 0, captureRect.clampedWidth, captureRect.clampedHeight);
+        }
+      };
+
+
       function PixelBuffer(gridWidth, gridHeight) {
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
@@ -14,7 +45,7 @@
         this.contexts = [];
         this.transform = null;
 
-        for (var i = 0; i < 3; ++i) {
+        for (var i = 0; i < 2; ++i) {
           this.contexts.push(document.createElement('canvas').getContext('2d'));
           // document.body.appendChild(this.contexts[i].canvas);
         }
@@ -22,7 +53,7 @@
 
       PixelBuffer.prototype = {
         get currentContext() {
-          var contextIndex = 0|(this.currentIndex / this.cells) + 1;
+          var contextIndex = 0|(this.currentIndex / this.cells);
           if (!this.contexts[contextIndex]) {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
@@ -36,12 +67,8 @@
           return this.contexts[contextIndex];
         },
 
-        get outputContext() {
-          return this.contexts[0];
-        },
-
         flush: function() {
-          var lastContextIndex = 0|(this.currentIndex / this.cells) + 1;
+          var lastContextIndex = 0|(this.currentIndex / this.cells);
           var pixelBuffer = {
             type: 'pixelBuffer',
             width: this.width,
@@ -53,7 +80,7 @@
 
           this.resetTransform();
 
-          for (var i = 1; i < this.contexts.length; ++i) {
+          for (var i = 0; i < this.contexts.length; ++i) {
             if (i > lastContextIndex) {
               break;
             }
@@ -79,13 +106,17 @@
 
           for (var i = 0; i < this.contexts.length; ++i) {
             var canvas = this.contexts[i].canvas;
-            canvas.width = (i === 0 ? 1 : this.gridWidth) * this.width;
-            canvas.height = (i === 0 ? 1 : this.gridHeight) * this.height;
+            canvas.width = this.gridWidth * this.width;
+            canvas.height = this.gridHeight * this.height;
           }
         },
 
         applyTransform: function(transform) {
-          for (var i = 1; i < this.contexts.length; ++i) {
+          if (transform === this.transform) {
+            return;
+          }
+
+          for (var i = 0; i < this.contexts.length; ++i) {
             transform.applyToContext(this.contexts[i]);
           }
 
@@ -95,12 +126,12 @@
         resetTransform: function() {
           this.transform = null;
 
-          for (var i = 1; i < this.contexts.length; ++i) {
+          for (var i = 0; i < this.contexts.length; ++i) {
             this.contexts[i].resetTransform();
           }
         },
 
-        drawImage: function(image, sx, sy, sw, sh) {
+        bufferImage: function(image, sx, sy, sw, sh) {
           var nextIndex = this.currentIndex;
           var i = nextIndex % this.cells;
           var y = 0|(i / this.gridWidth);
@@ -117,20 +148,14 @@
         }
       };
 
-      var pixelBuffer = new PixelBuffer(6, 6);
 
-      function MeatScopeFilmStrip(video, clamp, transform, x, y, width, height) {
-        this.pixelBuffer = pixelBuffer;
-        this.video = video;
-        this.clamp = clamp;
-        this.transform = transform;
-
+      function MeatScopeCaptureRect(video, clamp, x, y, width, height) {
         this.x = ((x || 0) - video.x) / video.scale;
         this.y = ((y || 0) - video.y) / video.scale;
-
         this.width = (width || video.viewportWidth) / video.scale;
         this.height = (height || video.viewportHeight) / video.scale;
         this.ratio = this.width / this.height;
+        this.clamp = clamp || Math.max(this.width, this.height);
 
         if (this.ratio > 1) {
           this.clampedWidth = Math.min(this.width - this.x, this.clamp);
@@ -142,6 +167,18 @@
 
         this.clampedWidth = 0|this.clampedWidth;
         this.clampedHeight = 0|this.clampedHeight;
+        this.upscale = video.viewportWidth / this.clampedWidth;
+      }
+
+
+      var pixelBuffer = new PixelBuffer(6, 6);
+      var imagePreview = new ImagePreview();
+
+      function MeatScopeFilmStrip(video, captureRect, transform) {
+        this.pixelBuffer = pixelBuffer;
+        this.video = video;
+        this.captureRect = captureRect;
+        this.transform = transform;
 
         this.pixelBuffer.setSize(this.clampedWidth, this.clampedHeight);
 
@@ -150,10 +187,42 @@
         }
       }
 
+      MeatScopeFilmStrip.preview = function(video, captureRect, transform) {
+        return imagePreview.from(video.$.video, captureRect, transform);
+      };
+
       MeatScopeFilmStrip.prototype = {
+        get x() {
+          return this.captureRect.x;
+        },
+
+        get y() {
+          return this.captureRect.y;
+        },
+
+        get width() {
+          return this.captureRect.width;
+        },
+
+        get height() {
+          return this.captureRect.height;
+        },
+
+        get clampedWidth() {
+          return this.captureRect.clampedWidth;
+        },
+
+        get clampedHeight() {
+          return this.captureRect.clampedHeight;
+        },
+
+        get ratio() {
+          return this.captureRect.ratio;
+        },
+
         capture: function() {
           performance.mark('capture.a');
-          this.pixelBuffer.drawImage(
+          this.pixelBuffer.bufferImage(
               this.video.$.video, this.x, this.y, this.width, this.height);
           performance.mark('capture.b');
           performance.measure('capture', 'capture.a', 'capture.b');
@@ -196,22 +265,34 @@
         this.radianRatio = Math.PI / 180;
       }
 
+      MeatScopeTransform.clone = function(other) {
+        return Object.assign(new MeatScopeTransform(), other);
+      };
+
       MeatScopeTransform.prototype = {
         mirror: function() {
-          this.scaleX *= -1;
+          var transform = MeatScopeTransform.clone(this);
+          transform.scaleX *= -1;
+          return transform;
         },
 
         flip: function() {
-          this.scaleX *= -1;
-          this.scaleY *= -1;
+          var transform = MeatScopeTransform.clone(this);
+          transform.scaleX *= -1;
+          transform.scaleY *= -1;
+          return transform;
         },
 
         rotateRight: function() {
-          this.rotation += 90;
+          var transform = MeatScopeTransform.clone(this);
+          transform.rotation += 90;
+          return transform;
         },
 
         rotateLeft: function() {
-          this.rotation -= 90;
+          var transform = MeatScopeTransform.clone(this);
+          transform.rotation -= 90;
+          return transform;
         },
 
         applyToContext: function(context) {
@@ -226,6 +307,7 @@
 
       window.MeatScopeTransform = MeatScopeTransform;
       window.MeatScopeFilmStrip = MeatScopeFilmStrip;
+      window.MeatScopeCaptureRect = MeatScopeCaptureRect;
     })();
   </script>
 </dom-module>

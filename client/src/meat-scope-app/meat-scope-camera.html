@@ -10,6 +10,7 @@
 <link rel="import" href="meat-scope-controls.html">
 <link rel="import" href="meat-scope-film-strip.html">
 <link rel="import" href="meat-scope-gallery-preview.html">
+<link rel="import" href="meat-scope-face-decorator.html">
 <dom-module id="meat-scope-camera">
   <template>
     <style>
@@ -79,12 +80,21 @@
         device="[[selectedCamera]]"
         stream="{{stream}}">
     </meat-scope-user-media>
-    <meat-scope-video
-        id="video"
-        class$="[[__videoClassName(selectedCamera, settings.*)]]"
-        stream="[[stream]]"
-        clamp="[[clamp]]">
-    </meat-scope-video>
+    <meat-scope-face-decorator
+        id="decorator"
+        client="[[client]]"
+        transform="[[transform]]"
+        url="/src/images/meat_scope_deal_with_it.svg"
+        offset-scale-y="0.3"
+        offset-scale-x="-0.15"
+        offset-scale-area="1">
+      <meat-scope-video
+          id="video"
+          class$="[[__videoClassName(selectedCamera, settings.*)]]"
+          stream="[[stream]]"
+          clamp="[[clamp]]">
+      </meat-scope-video>
+    </meat-scope-face-decorator>
     <meat-scope-camera-progress
         id="progress"
         lead-time="[[leadTime]]"
@@ -166,6 +176,11 @@
         settings: {
           type: Object,
           notify: true
+        },
+
+        transform: {
+          type: MeatScopeTransform,
+          computed: '__computeTransform(selectedCamera, settings.*)'
         }
       },
 
@@ -197,7 +212,12 @@
           }.bind(this);
 
           this.$.media.reset();
-          this.$.media.activate().then(checkStream);
+          this.$.media.activate()
+              .then(checkStream)
+              .catch(function(error) {
+                console.error('Unexpected failure to activate user media!');
+                throw error;
+              });
 
           var timeout = setTimeout(function() {
             reject(new Error('No User Media Stream received!'));
@@ -206,20 +226,9 @@
       },
 
       record: function() {
-        var usingEnvironmentCamera = this.__usingEnvironmentCamera;
-        var transform = new MeatScopeTransform();
-
-        if ((usingEnvironmentCamera && !this.settings.mirror) ||
-            (!usingEnvironmentCamera && this.settings.mirror)) {
-          transform.mirror();
-        }
-
-        if (this.settings.flip) {
-          transform.flip();
-        }
-
+        var captureRect = new MeatScopeCaptureRect(this.$.video, this.clamp);
         var filmStrip = new MeatScopeFilmStrip(
-            this.$.video, this.clamp, transform)
+            this.$.video, captureRect, this.transform);
 
         return new Promise(function(resolve, reject) {
           var frames = [];
@@ -299,6 +308,22 @@
         }
 
         this.$.controls.showUpdateIndicator = true;
+      },
+
+      __computeTransform: function() {
+        var transform = new MeatScopeTransform();
+        var usingEnvironmentCamera = this.__usingEnvironmentCamera;
+
+        if ((usingEnvironmentCamera && !this.settings.mirror) ||
+            (!usingEnvironmentCamera && this.settings.mirror)) {
+          transform = transform.mirror();
+        }
+
+        if (this.settings.flip) {
+          transform = transform.flip();
+        }
+
+        return transform;
       },
 
       __hidePreview: function(recording, videoUrl) {

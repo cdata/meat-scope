@@ -2,6 +2,7 @@
   'use strict';
 
   self.importScripts(['/bower_components/gif.js/dist/libgif.js']);
+  self.importScripts(['/src/meat-scope-app/meat-scope-media-converter/thread-allocator.js']);
 
   function MeatScopeSlicer(source, settings) {
     this.source = source;

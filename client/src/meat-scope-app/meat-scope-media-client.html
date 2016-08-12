@@ -62,6 +62,16 @@
       }.bind(this));
     },
 
+    detectFaces: function(input, upscale) {
+      return this.post({
+        type: 'meat-scope-detect-faces',
+        input: input,
+        upscale: upscale
+      }).then(function(data) {
+        return data.faces;
+      });
+    },
+
     convert: function(input, settings) {
       return this.post({
         type: 'meat-scope-convert-to-video',
